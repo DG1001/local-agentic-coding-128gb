@@ -1,0 +1,165 @@
+#!/usr/bin/env bash
+# model-switch — startet genau EIN grosses Modell auf dem GX10.
+#
+# Der GX10 hat 121 GiB Unified Memory. Jedes dieser Modelle belegt einen
+# erheblichen Teil davon, zwei gleichzeitig passen nicht. Deshalb stoppt
+# jeder Start hier zuerst alles andere.
+#
+#   model-switch ds4          DeepSeek-V4-Flash   :8888  (ds4-server, nativ)
+#   model-switch laguna       Laguna-S-2.1        :8889  (vLLM)
+#   model-switch kat          KAT-Coder-V2.5-Dev  :8889  (vLLM)
+#   model-switch agentworld   Qwen-AgentWorld-35B :8889  (vLLM)
+#   model-switch qwen27b      Qwen3.6-27B         :8889  (vLLM)
+#   model-switch stop         alles stoppen
+#   model-switch status       was laeuft gerade
+#
+# Uebersteuerbar je Aufruf:  CTX=131072 model-switch kat
+#                            GPU_UTIL=0.80 model-switch qwen27b
+set -uo pipefail
+
+DS4_PORT=8888
+VLLM_PORT=8889
+MODELS="$HOME/models"
+CONTAINER=vllm-model
+IMAGE=vllm/vllm-openai:latest
+
+# ---------------------------------------------------------------- Modelle
+# Setzt DIR, SERVED, DEF_CTX und das Array EXTRA fuer das gewaehlte Modell.
+load_spec() {
+    EXTRA=()
+    case "$1" in
+        laguna)
+            DIR=Laguna-S-2.1-NVFP4; SERVED=laguna-s-2.1; DEF_CTX=65536
+            EXTRA=(--speculative-config '{"model":"/models/Laguna-S-2.1-DFlash-NVFP4","num_speculative_tokens":15}'
+                   --tool-call-parser poolside_v1 --reasoning-parser poolside_v1) ;;
+        # --language-model-only: beide Checkpoints tragen die Architektur
+        # Qwen3_5MoeForConditionalGeneration und eine vision_config, enthalten
+        # aber keine einzige visual.*-Gewichtsmatrix. Ohne den Schalter baut
+        # vLLM den Vision-Turm auf und bricht mit "Following weights were not
+        # initialized from checkpoint" ab. Das Feld language_model_only in der
+        # config.json liest vLLM 0.26.0 nicht -- nur diesen CLI-Schalter.
+        kat)
+            DIR=KAT-Coder-V2.5-Dev; SERVED=kat-coder-v2.5; DEF_CTX=131072
+            EXTRA=(--language-model-only --tool-call-parser qwen3_xml --reasoning-parser qwen3) ;;
+        agentworld)
+            DIR=Qwen-AgentWorld-35B-A3B; SERVED=qwen-agentworld-35b; DEF_CTX=131072
+            EXTRA=(--language-model-only --tool-call-parser qwen3_xml --reasoning-parser qwen3) ;;
+        qwen27b)
+            DIR=Qwen3.6-27B; SERVED=qwen3.6-27b; DEF_CTX=131072
+            EXTRA=(--tool-call-parser qwen3_xml --reasoning-parser qwen3) ;;
+        *)  return 1 ;;
+    esac
+    return 0
+}
+
+# ---------------------------------------------------------------- Stoppen
+stop_ds4() {
+    pgrep -x ds4-server >/dev/null || return 0
+    echo "Stoppe ds4-server ..."
+    pkill -x ds4-server
+    for _ in $(seq 1 40); do pgrep -x ds4-server >/dev/null || break; sleep 1; done
+    pgrep -x ds4-server >/dev/null && { pkill -9 -x ds4-server; sleep 2; }
+    return 0
+}
+
+stop_vllm() {
+    # "laguna" ist der Name aus der ersten Fassung dieses Skripts; ohne ihn
+    # bliebe ein damit gestarteter Container beim Umschalten stehen.
+    local c
+    for c in "$CONTAINER" laguna; do
+        docker ps --format '{{.Names}}' 2>/dev/null | grep -qx "$c" || continue
+        echo "Stoppe vLLM-Container $c ..."
+        docker stop -t 60 "$c" >/dev/null
+    done
+    return 0
+}
+
+# ---------------------------------------------------------------- Warten
+wait_ready() {
+    local port="$1" name="$2" tries="${3:-360}"
+    echo -n "Warte auf $name auf :$port "
+    for _ in $(seq 1 "$tries"); do
+        if curl -sf --max-time 3 "http://127.0.0.1:$port/v1/models" >/dev/null 2>&1; then
+            echo " bereit."
+            curl -s "http://127.0.0.1:$port/v1/models" | python3 -c \
+                "import sys,json;[print('  Modell:',m['id'],'| Kontext:',m.get('max_model_len','?')) for m in json.load(sys.stdin)['data']]" 2>/dev/null
+            docker logs "$CONTAINER" 2>&1 | grep -oE 'GPU KV cache size: [0-9,]+ tokens' | tail -1 | sed 's/^/  /'
+            return 0
+        fi
+        # Container unerwartet weg? Dann Logs zeigen statt weiterzuwarten.
+        if [ "$port" = "$VLLM_PORT" ] && ! docker ps --format '{{.Names}}' | grep -qx "$CONTAINER"; then
+            echo " CONTAINER GESTOPPT."
+            docker logs "$CONTAINER" 2>&1 | grep -viE '^\s*$' | tail -25
+            return 1
+        fi
+        echo -n "."
+        sleep 5
+    done
+    echo " ZEITUEBERSCHREITUNG."
+    return 1
+}
+
+# ---------------------------------------------------------------- Starten
+start_ds4() {
+    stop_vllm; stop_ds4
+    echo "Starte ds4-server (DeepSeek-V4-Flash) ..."
+    setsid "$HOME/.local/bin/ds4-serve" --port "$DS4_PORT" -c "${CTX:-65536}" \
+        > "$HOME/ds4-server.log" 2>&1 < /dev/null &
+    wait_ready "$DS4_PORT" "ds4-server" 180
+}
+
+start_vllm() {
+    local key="$1"
+    load_spec "$key" || { echo "Unbekanntes Modell: $key"; exit 2; }
+    [ -d "$MODELS/$DIR" ] || { echo "FEHLER: $MODELS/$DIR fehlt"; exit 1; }
+
+    stop_ds4; stop_vllm
+    mkdir -p "$HOME/.cache/vllm"
+    # Bewusst OHNE --rm: stirbt der Container, bleiben die Logs zur Diagnose.
+    docker rm -f "$CONTAINER" >/dev/null 2>&1 || true
+
+    echo "Starte $DIR (vLLM, ctx ${CTX:-$DEF_CTX}) ..."
+    docker run -d --name "$CONTAINER" \
+        --gpus all --ipc=host \
+        -v "$MODELS:/models:ro" \
+        -v "$HOME/.cache/vllm:/root/.cache/vllm" \
+        -p "127.0.0.1:$VLLM_PORT:8000" \
+        "$IMAGE" \
+        "/models/$DIR" \
+        --served-model-name "$SERVED" \
+        --enable-auto-tool-choice \
+        "${EXTRA[@]}" \
+        --max-num-seqs 32 \
+        --max-model-len "${CTX:-$DEF_CTX}" \
+        --gpu-memory-utilization "${GPU_UTIL:-0.85}" \
+        --kv-cache-dtype "${KV_DTYPE:-fp8}" \
+        --host 0.0.0.0 --port 8000 >/dev/null
+    wait_ready "$VLLM_PORT" "$SERVED" 360
+}
+
+# ---------------------------------------------------------------- Status
+status() {
+    printf '%-14s ' "ds4-server:"
+    if curl -sf --max-time 3 "http://127.0.0.1:$DS4_PORT/v1/models" >/dev/null 2>&1; then
+        echo "laeuft auf :$DS4_PORT"
+    elif pgrep -x ds4-server >/dev/null; then echo "startet gerade"
+    else echo "gestoppt"; fi
+
+    printf '%-14s ' "vLLM:"
+    if curl -sf --max-time 3 "http://127.0.0.1:$VLLM_PORT/v1/models" >/dev/null 2>&1; then
+        curl -s "http://127.0.0.1:$VLLM_PORT/v1/models" | python3 -c \
+            "import sys,json;d=json.load(sys.stdin)['data'][0];print(f\"{d['id']} auf :$VLLM_PORT (Kontext {d.get('max_model_len','?')})\")" 2>/dev/null
+    elif docker ps --format '{{.Names}}' 2>/dev/null | grep -qx "$CONTAINER"; then
+        echo "startet gerade (docker logs $CONTAINER)"
+    else echo "gestoppt"; fi
+
+    free -h | awk 'NR==2{printf "%-14s %s frei von %s\n", "Speicher:", $7, $2}'
+}
+
+case "${1:-status}" in
+    ds4)                          start_ds4 ;;
+    laguna|kat|agentworld|qwen27b) start_vllm "$1" ;;
+    stop)   stop_ds4; stop_vllm; echo "Alles gestoppt."; free -h | awk 'NR==2{print "Frei: "$7}' ;;
+    status) status ;;
+    *)      sed -n '2,18p' "$0"; exit 2 ;;
+esac

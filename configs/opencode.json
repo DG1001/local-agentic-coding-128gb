@@ -1,0 +1,120 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "ds4": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "ds4 lokal (DGX Spark)",
+      "options": {
+        "baseURL": "http://127.0.0.1:8888/v1",
+        "apiKey": "unused",
+        "headerTimeout": 600000,
+        "timeout": 3600000
+      },
+      "models": {
+        "deepseek-v4-flash": {
+          "name": "DeepSeek V4 Flash",
+          "tool_call": true,
+          "temperature": true,
+          "limit": {
+            "context": 65536,
+            "output": 16384
+          }
+        }
+      }
+    },
+    "laguna": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Laguna-S-2.1 lokal (DGX Spark)",
+      "options": {
+        "baseURL": "http://127.0.0.1:8889/v1",
+        "apiKey": "unused",
+        "headerTimeout": 600000,
+        "timeout": 3600000
+      },
+      "models": {
+        "laguna-s-2.1": {
+          "name": "Laguna-S 2.1",
+          "tool_call": true,
+          "temperature": true,
+          "reasoning": false,
+          "options": {
+            "chat_template_kwargs": {
+              "enable_thinking": false
+            }
+          },
+          "limit": {
+            "context": 65536,
+            "output": 16384
+          }
+        }
+      }
+    },
+    "kat": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "KAT-Coder V2.5 lokal (DGX Spark)",
+      "options": {
+        "baseURL": "http://127.0.0.1:8889/v1",
+        "apiKey": "unused",
+        "headerTimeout": 600000,
+        "timeout": 3600000
+      },
+      "models": {
+        "kat-coder-v2.5": {
+          "name": "KAT-Coder V2.5 Dev",
+          "tool_call": true,
+          "temperature": true,
+          "reasoning": false,
+          "options": {
+            "chat_template_kwargs": { "enable_thinking": false }
+          },
+          "limit": { "context": 131072, "output": 32768 }
+        }
+      }
+    },
+    "agentworld": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Qwen AgentWorld 35B lokal (DGX Spark)",
+      "options": {
+        "baseURL": "http://127.0.0.1:8889/v1",
+        "apiKey": "unused",
+        "headerTimeout": 600000,
+        "timeout": 3600000
+      },
+      "models": {
+        "qwen-agentworld-35b": {
+          "name": "Qwen AgentWorld 35B-A3B",
+          "tool_call": true,
+          "temperature": true,
+          "reasoning": false,
+          "options": {
+            "chat_template_kwargs": { "enable_thinking": false }
+          },
+          "limit": { "context": 131072, "output": 32768 }
+        }
+      }
+    },
+    "qwen": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Qwen3.6-27B lokal (DGX Spark)",
+      "options": {
+        "baseURL": "http://127.0.0.1:8889/v1",
+        "apiKey": "unused",
+        "headerTimeout": 600000,
+        "timeout": 3600000
+      },
+      "models": {
+        "qwen3.6-27b": {
+          "name": "Qwen3.6 27B",
+          "tool_call": true,
+          "temperature": true,
+          "reasoning": false,
+          "options": {
+            "chat_template_kwargs": { "enable_thinking": false }
+          },
+          "limit": { "context": 131072, "output": 32768 }
+        }
+      }
+    }
+  },
+  "model": "ds4/deepseek-v4-flash"
+}

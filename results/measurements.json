@@ -1,0 +1,232 @@
+{
+  "ds4": {
+    "name": "DeepSeek-V4-Flash",
+    "architecture": "MoE, 117B total / 8.5B active",
+    "precision": "GGUF Q4-class",
+    "weights_gb_on_disk": 88,
+    "engine": "llama.cpp-derived ds4-server",
+    "tasks": {
+      "t1-debug": {
+        "seconds": 283,
+        "exit_code": 0,
+        "hidden_passed": 15,
+        "hidden_total": 15,
+        "tool_calls": 3,
+        "own_tests_passing": 9
+      },
+      "t2-refactor": {
+        "seconds": 213,
+        "exit_code": 0,
+        "hidden_passed": 17,
+        "hidden_total": 17,
+        "tool_calls": 0,
+        "own_tests_passing": 17
+      },
+      "t3-neubau": {
+        "seconds": 564,
+        "exit_code": 0,
+        "hidden_passed": 33,
+        "hidden_total": 33,
+        "tool_calls": 0,
+        "own_tests_passing": 27
+      },
+      "t4-feature": {
+        "seconds": 489,
+        "exit_code": 0,
+        "hidden_passed": 21,
+        "hidden_total": 21,
+        "tool_calls": 8,
+        "own_tests_passing": 20
+      }
+    },
+    "total_seconds": 1549,
+    "total_hidden_passed": 86,
+    "total_hidden": 86,
+    "total_tool_calls": 11,
+    "total_own_tests": 73
+  },
+  "laguna": {
+    "name": "Laguna-S-2.1",
+    "architecture": "MoE, 117B total / 8.5B active",
+    "precision": "NVFP4",
+    "weights_gb_on_disk": 93,
+    "engine": "vLLM 0.26.0",
+    "tasks": {
+      "t1-debug": {
+        "seconds": 152,
+        "exit_code": 0,
+        "hidden_passed": 15,
+        "hidden_total": 15,
+        "tool_calls": 6,
+        "own_tests_passing": 10
+      },
+      "t2-refactor": {
+        "seconds": 266,
+        "exit_code": 0,
+        "hidden_passed": 17,
+        "hidden_total": 17,
+        "tool_calls": 6,
+        "own_tests_passing": 19
+      },
+      "t3-neubau": {
+        "seconds": 973,
+        "exit_code": 0,
+        "hidden_passed": 33,
+        "hidden_total": 33,
+        "tool_calls": 4,
+        "own_tests_passing": 50
+      },
+      "t4-feature": {
+        "seconds": 465,
+        "exit_code": 0,
+        "hidden_passed": 21,
+        "hidden_total": 21,
+        "tool_calls": 7,
+        "own_tests_passing": 32
+      }
+    },
+    "total_seconds": 1856,
+    "total_hidden_passed": 86,
+    "total_hidden": 86,
+    "total_tool_calls": 23,
+    "total_own_tests": 111
+  },
+  "kat": {
+    "name": "KAT-Coder-V2.5-Dev",
+    "architecture": "MoE, Qwen3.6-35B derivative",
+    "precision": "BF16",
+    "weights_gb_on_disk": 65,
+    "engine": "vLLM 0.26.0",
+    "tasks": {
+      "t1-debug": {
+        "seconds": 90,
+        "exit_code": 0,
+        "hidden_passed": 15,
+        "hidden_total": 15,
+        "tool_calls": 4,
+        "own_tests_passing": 9
+      },
+      "t2-refactor": {
+        "seconds": 168,
+        "exit_code": 0,
+        "hidden_passed": 17,
+        "hidden_total": 17,
+        "tool_calls": 7,
+        "own_tests_passing": 14
+      },
+      "t3-neubau": {
+        "seconds": 954,
+        "exit_code": 0,
+        "hidden_passed": 31,
+        "hidden_total": 33,
+        "tool_calls": 6,
+        "own_tests_passing": 27
+      },
+      "t4-feature": {
+        "seconds": 347,
+        "exit_code": 0,
+        "hidden_passed": 21,
+        "hidden_total": 21,
+        "tool_calls": 6,
+        "own_tests_passing": 29
+      }
+    },
+    "total_seconds": 1559,
+    "total_hidden_passed": 84,
+    "total_hidden": 86,
+    "total_tool_calls": 23,
+    "total_own_tests": 79
+  },
+  "agentworld": {
+    "name": "Qwen-AgentWorld-35B-A3B",
+    "architecture": "MoE, 35B total / 3B active",
+    "precision": "BF16",
+    "weights_gb_on_disk": 65,
+    "engine": "vLLM 0.26.0",
+    "tasks": {
+      "t1-debug": {
+        "seconds": 236,
+        "exit_code": 0,
+        "hidden_passed": 15,
+        "hidden_total": 15,
+        "tool_calls": 5,
+        "own_tests_passing": 9
+      },
+      "t2-refactor": {
+        "seconds": 349,
+        "exit_code": 0,
+        "hidden_passed": 14,
+        "hidden_total": 17,
+        "tool_calls": 6,
+        "own_tests_passing": 12
+      },
+      "t3-neubau": {
+        "seconds": 967,
+        "exit_code": 0,
+        "hidden_passed": 30,
+        "hidden_total": 33,
+        "tool_calls": 1,
+        "own_tests_passing": 24
+      },
+      "t4-feature": {
+        "seconds": 942,
+        "exit_code": 0,
+        "hidden_passed": 21,
+        "hidden_total": 21,
+        "tool_calls": 9,
+        "own_tests_passing": 21
+      }
+    },
+    "total_seconds": 2494,
+    "total_hidden_passed": 80,
+    "total_hidden": 86,
+    "total_tool_calls": 21,
+    "total_own_tests": 66
+  },
+  "qwen27b": {
+    "name": "Qwen3.6-27B",
+    "architecture": "dense, 27B",
+    "precision": "BF16",
+    "weights_gb_on_disk": 52,
+    "engine": "vLLM 0.26.0",
+    "tasks": {
+      "t1-debug": {
+        "seconds": 1788,
+        "exit_code": 0,
+        "hidden_passed": 15,
+        "hidden_total": 15,
+        "tool_calls": 3,
+        "own_tests_passing": 9
+      },
+      "t2-refactor": {
+        "seconds": 3169,
+        "exit_code": 0,
+        "hidden_passed": 17,
+        "hidden_total": 17,
+        "tool_calls": 6,
+        "own_tests_passing": 28
+      },
+      "t3-neubau": {
+        "seconds": 2762,
+        "exit_code": 0,
+        "hidden_passed": 33,
+        "hidden_total": 33,
+        "tool_calls": 2,
+        "own_tests_passing": 52
+      },
+      "t4-feature": {
+        "seconds": 3537,
+        "exit_code": 0,
+        "hidden_passed": 21,
+        "hidden_total": 21,
+        "tool_calls": 7,
+        "own_tests_passing": 29
+      }
+    },
+    "total_seconds": 11256,
+    "total_hidden_passed": 86,
+    "total_hidden": 86,
+    "total_tool_calls": 18,
+    "total_own_tests": 118
+  }
+}
