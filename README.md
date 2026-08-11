@@ -1,9 +1,15 @@
-# Local agentic coding on 128 GB unified memory
+# Local agentic coding on 128 GB unified memory (DGX Spark class)
 
-Five large models, four realistic coding tasks, 86 hidden tests each, one
-ASUS Ascent GX10 (NVIDIA GB10, 128 GB unified memory). Everything ran locally
-through [opencode](https://opencode.ai) against an OpenAI-compatible endpoint
-on `127.0.0.1`.
+Five large local LLMs, four realistic coding tasks, 86 hidden tests each, one
+ASUS Ascent GX10 — **NVIDIA GB10, 128 GB unified memory**, the same chip and
+memory configuration as the NVIDIA DGX Spark. Everything ran locally through
+[opencode](https://opencode.ai), [Claude Code](https://claude.com/claude-code)
+and [Oh My Pi](https://github.com/can1357/oh-my-pi) against endpoints on
+`127.0.0.1` — no cloud API, no per-token cost.
+
+Models: DeepSeek-V4-Flash, Laguna-S-2.1 (poolside), KAT-Coder-V2.5,
+Qwen-AgentWorld-35B-A3B, Qwen3.6-27B. Served with vLLM and a
+llama.cpp-derived server.
 
 This is the big-memory counterpart to
 [local-agentic-coding-24gb](https://github.com/DG1001/local-agentic-coding-24gb),
@@ -40,7 +46,11 @@ not a software problem and it is not tunable. See below.
 - vLLM 0.26.0 in Docker for four models; `ds4-server` (llama.cpp-derived,
   from [DeepSeek-v4-Flash-One-DGX-Spark](https://github.com/MiaAI-Lab/DeepSeek-v4-Flash-One-DGX-Spark))
   for DeepSeek
-- opencode 1.18.14 as the agent harness
+- opencode 1.18.14, Claude Code 2.1.226 and Oh My Pi 17.2.12 as agent harnesses
+
+Comparable hardware: the NVIDIA DGX Spark uses the same GB10 superchip and the
+same 128 GB unified LPDDR5X, so the bandwidth findings below transfer directly.
+Nothing here depends on the ASUS badge.
 
 Only one model runs at a time — DeepSeek alone occupies ~113 GiB. The
 [`tools/model-switch`](tools/model-switch) script in this repo stops whatever
