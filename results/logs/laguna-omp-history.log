@@ -1,0 +1,8 @@
+### t1-debug gestartet 02:18:16
+### t1-debug fertig: 526s rc=0 verdeckt=15/15
+### t2-refactor gestartet 02:27:05
+### t2-refactor fertig: 453s rc=0 verdeckt=17/17
+### t3-neubau gestartet 02:34:41
+### t3-neubau fertig: 1180s rc=0 verdeckt=33/33
+### t4-feature gestartet 02:54:24
+### t4-feature fertig: 576s rc=0 verdeckt=21/21

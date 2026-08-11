@@ -22,7 +22,9 @@ model here ran out of room, and four of the five got at least 84 of 86 tests
 right.
 
 What limits you here is **memory bandwidth**, and it decides which models are
-worth running at all.
+worth running at all. And — the finding that surprised us most — **which agent
+harness you point at the model changes not just how long it takes, but how many
+tests pass.**
 
 ## The short version
 
@@ -236,6 +238,7 @@ output) — only the agent harness differs. Laguna-S-2.1 throughout:
 | Harness | Hidden tests | Wall clock |
 |---|---|---|
 | **opencode** | **86 / 86** | 30:56 |
+| **Oh My Pi** | **86 / 86** | 45:35 |
 | Claude Code | **9 / 86** | 1:58:51 |
 
 Every one of Claude Code's four tasks ended with the same error:
@@ -253,6 +256,69 @@ opencode does the same four tasks on the same budget without compacting once.
 
 **On a 65K-context local model, use opencode.** Whether Claude Code works at
 128K is untested here.
+
+### The surprise: the harness changes *correctness*, not just speed
+
+Running all four models through Oh My Pi as well turned the speed comparison
+into something more interesting.
+
+| Model | opencode | Oh My Pi |
+|---|---|---|
+| Laguna-S-2.1 | 86 / 86 · 31 min | **86 / 86** · 45 min |
+| DeepSeek-V4-Flash | **86 / 86** · 26 min | 53 / 86 · 43 min |
+| KAT-Coder-V2.5 | 84 / 86 · 26 min | **85 / 86** · 78 min |
+| Qwen-AgentWorld-35B | 80 / 86 · 42 min | **86 / 86** · 92 min |
+
+**Seven points that opencode left on the table, Oh My Pi collects — same models,
+same tasks, same hidden suites.** These are not rounding: each was a specific,
+identified defect.
+
+- **KAT, `t3`** — opencode: the query parser split `waehle name, ort` on
+  whitespace and kept the comma glued to the column name. Oh My Pi: parses it
+  correctly. (31/33 → 32/33)
+- **AgentWorld, `t2`** — opencode: a second `STANDARD = Register()` in
+  `__init__.py` shadowed the imported one, so the path the task names
+  explicitly stayed empty forever while everything visible worked. Oh My Pi:
+  one registry, correctly imported and filled. (14/17 → 17/17)
+- **AgentWorld, `t3`** — opencode: three missing input-validation errors.
+  Oh My Pi: all present. (30/33 → 33/33)
+
+The price is consistent: **two to three times the wall clock.** Oh My Pi runs
+more turns and more tool calls per task, and that extra work is where the
+defects get caught. If you have the time budget, it buys real correctness; if
+you don't, opencode gets you 97% of the score in a third of the time.
+
+### The one failure, and why it is instructive
+
+DeepSeek-V4-Flash scores 53/86 with Oh My Pi — but 15/15, 17/17 and 21/21 on
+`t1`, `t2` and `t4`. The entire deficit is `t3`, which produced **zero files in
+683 seconds**. The JSON event stream explains it exactly:
+
+```
+turn_end   stopReason: "length"
+           usage.output: 16384        ← exactly the output cap
+           content blocks: ['thinking']
+           thinking length: 60,371 characters
+```
+
+The model spent the whole turn planning the implementation in its head, hit the
+16,384-token output cap mid-thought, and never emitted a single tool call. The
+harness saw a turn with no action, ended it, and exited `0`.
+
+**Why only `t3`:** the other three tasks ship a seed repository, so the obvious
+first move is a `read` or `ls` — the model acts immediately and thinks in
+smaller chunks afterwards. `t3` is pure specification with no file to anchor
+on, so the model tries to work the whole design out up front.
+
+This is not a harness bug and not really a model failure. It is an unlucky
+interaction between a model that thinks at length, a task with nothing to act
+on first, and **an output cap that thinking and acting draw from the same
+pool.** Raising `maxTokens` to 32,768 would very likely fix it — and would also
+destroy comparability with the opencode runs, so the number stands as measured.
+
+A harness could defend against this: if a turn ends with `stopReason: "length"`
+and produced no tool call, retry with a nudge to act rather than treating it as
+a finished turn.
 
 ### No translation proxy needed
 
@@ -360,9 +426,14 @@ Read the numbers with these in mind:
   a comparison of *usable local setups*, not of model weights under equal
   conditions.
 - **Bandwidth figure is vendor spec**, not independently measured.
-- **The harness comparison is one model, one run.** Claude Code was tested
-  against Laguna only, at 65K context. A third harness (Oh My Pi) is being
-  measured separately and is not in the table yet.
+- **The harness comparison is one run per pairing.** Oh My Pi covers four
+  models, Claude Code only Laguna (at 65K context — it never got far enough to
+  be worth extending). Seven recovered points across three distinct defects is
+  a pattern, not a proof; a second run per pairing could move any single number.
+- **Qwen3.6-27B was deliberately skipped in the Oh My Pi round.** At 4.5 tok/s
+  it took 187 minutes under opencode; at Oh My Pi's 2–3× that is over ten hours
+  for a model already shown to be impractical here. An omission, not a gap in
+  the data.
 
 ## Layout
 
@@ -376,8 +447,9 @@ bench/
     seed/                 starting repository (absent for t3-neubau)
     test_bench.py         hidden grading suite — never visible to the model
 results/
-  measurements.json       all numbers in this README, machine-readable
-  logs/                   per-model timeline of each run
+  measurements.json       opencode runs, machine-readable
+  omp-measurements.json   Oh My Pi runs, machine-readable
+  logs/                   per-model, per-harness timeline of each run
 tools/
   model-switch            starts exactly one model, stops the others
   cc-local                launches Claude Code against a local model

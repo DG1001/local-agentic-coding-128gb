@@ -1,0 +1,110 @@
+{
+  "laguna": {
+    "name": "Laguna-S-2.1",
+    "tasks": {
+      "t1-debug": {
+        "seconds": 526,
+        "passed": 15,
+        "total": 15
+      },
+      "t2-refactor": {
+        "seconds": 453,
+        "passed": 17,
+        "total": 17
+      },
+      "t3-neubau": {
+        "seconds": 1180,
+        "passed": 33,
+        "total": 33
+      },
+      "t4-feature": {
+        "seconds": 576,
+        "passed": 21,
+        "total": 21
+      }
+    },
+    "total_passed": 86,
+    "total_seconds": 2735
+  },
+  "ds4": {
+    "name": "DeepSeek-V4-Flash",
+    "tasks": {
+      "t1-debug": {
+        "seconds": 575,
+        "passed": 15,
+        "total": 15
+      },
+      "t2-refactor": {
+        "seconds": 581,
+        "passed": 17,
+        "total": 17
+      },
+      "t3-neubau": {
+        "seconds": 610,
+        "passed": 0,
+        "total": 33
+      },
+      "t4-feature": {
+        "seconds": 866,
+        "passed": 21,
+        "total": 21
+      }
+    },
+    "total_passed": 53,
+    "total_seconds": 2632
+  },
+  "kat": {
+    "name": "KAT-Coder-V2.5-Dev",
+    "tasks": {
+      "t1-debug": {
+        "seconds": 512,
+        "passed": 15,
+        "total": 15
+      },
+      "t2-refactor": {
+        "seconds": 388,
+        "passed": 17,
+        "total": 17
+      },
+      "t3-neubau": {
+        "seconds": 2950,
+        "passed": 32,
+        "total": 33
+      },
+      "t4-feature": {
+        "seconds": 834,
+        "passed": 21,
+        "total": 21
+      }
+    },
+    "total_passed": 85,
+    "total_seconds": 4684
+  },
+  "agentworld": {
+    "name": "Qwen-AgentWorld-35B-A3B",
+    "tasks": {
+      "t1-debug": {
+        "seconds": 671,
+        "passed": 15,
+        "total": 15
+      },
+      "t2-refactor": {
+        "seconds": 575,
+        "passed": 17,
+        "total": 17
+      },
+      "t3-neubau": {
+        "seconds": 2316,
+        "passed": 33,
+        "total": 33
+      },
+      "t4-feature": {
+        "seconds": 1973,
+        "passed": 21,
+        "total": 21
+      }
+    },
+    "total_passed": 86,
+    "total_seconds": 5535
+  }
+}
