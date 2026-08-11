@@ -1,0 +1,43 @@
+# Lokale Modelle auf dem GX10.
+#
+# Bewusst openai-completions statt anthropic-messages: das ist derselbe Pfad,
+# den opencode nimmt, damit der Harness-Vergleich nur den Harness misst.
+# enable_thinking=false steht serverseitig im model-switch als Vorgabe.
+
+providers:
+  gx10:
+    baseUrl: http://127.0.0.1:8889/v1
+    auth: none
+    api: openai-completions
+    models:
+      - id: laguna-s-2.1
+        name: Laguna-S 2.1
+        contextWindow: 65536
+        maxTokens: 16384
+        cost: {input: 0, output: 0, cacheRead: 0, cacheWrite: 0}
+      - id: kat-coder-v2.5
+        name: KAT-Coder V2.5
+        contextWindow: 131072
+        maxTokens: 32768
+        cost: {input: 0, output: 0, cacheRead: 0, cacheWrite: 0}
+      - id: qwen-agentworld-35b
+        name: Qwen AgentWorld 35B
+        contextWindow: 131072
+        maxTokens: 32768
+        cost: {input: 0, output: 0, cacheRead: 0, cacheWrite: 0}
+      - id: qwen3.6-27b
+        name: Qwen3.6 27B
+        contextWindow: 131072
+        maxTokens: 32768
+        cost: {input: 0, output: 0, cacheRead: 0, cacheWrite: 0}
+
+  gx10ds4:
+    baseUrl: http://127.0.0.1:8888/v1
+    auth: none
+    api: openai-completions
+    models:
+      - id: deepseek-v4-flash
+        name: DeepSeek V4 Flash
+        contextWindow: 65536
+        maxTokens: 16384
+        cost: {input: 0, output: 0, cacheRead: 0, cacheWrite: 0}

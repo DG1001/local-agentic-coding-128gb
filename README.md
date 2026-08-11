@@ -218,6 +218,80 @@ DeepSeek skipped the requested verification entirely on two tasks and was
 correct anyway. At this difficulty that is harmless. On harder work it is
 exactly where an unnoticed error would slip through.
 
+## The harness matters as much as the model
+
+Same model, same tasks, same hidden tests, same limits (65,536 context, 16,384
+output) — only the agent harness differs. Laguna-S-2.1 throughout:
+
+| Harness | Hidden tests | Wall clock |
+|---|---|---|
+| **opencode** | **86 / 86** | 30:56 |
+| Claude Code | **9 / 86** | 1:58:51 |
+
+Every one of Claude Code's four tasks ended with the same error:
+
+```
+Autocompact is thrashing: the context refilled to the limit within
+3 turns of the previous compact, 3 times in a row.
+```
+
+Including `t3-neubau`, which starts from an **empty directory** — 57 minutes,
+zero files written. So it is not about reading an existing codebase into
+context: Claude Code's own baseline footprint (system prompt, tool
+definitions, working state) exceeds what a ~49K input budget can sustain.
+opencode does the same four tasks on the same budget without compacting once.
+
+**On a 65K-context local model, use opencode.** Whether Claude Code works at
+128K is untested here.
+
+### No translation proxy needed
+
+Every guide says to put LiteLLM or claude-code-router between Claude Code and
+a local model. On this setup that is unnecessary — **both servers speak the
+Anthropic Messages API natively**:
+
+- vLLM ships an `anthropic` entrypoint (`/v1/messages`,
+  `/v1/messages/count_tokens`) — present in the 0.26.0 image
+- `ds4-server` implements it too, returning proper content blocks,
+  `stop_reason`, and `usage`
+
+Point `ANTHROPIC_BASE_URL` at the local port and it works. See
+[`tools/cc-local`](tools/cc-local).
+
+### Three configuration traps, none of them documented
+
+Each cost a failed run. All three fail *mid-task*, not at startup.
+
+**1. `--default-chat-template-kwargs '{"enable_thinking": false}'` — set it
+server-side.** The Anthropic Messages API has no `chat_template_kwargs` field,
+so an Anthropic-protocol client cannot send it. Without the server-side
+default, a reasoning model's chain of thought lands in the answer text along
+with an orphaned `</think>`:
+
+```
+"content": [{"type": "text", "text": "</think>Ok."}]
+```
+
+Request-level values still take precedence, so an OpenAI-protocol client that
+sets it per request (like opencode) is unaffected.
+
+**2. `CLAUDE_CODE_MAX_OUTPUT_TOKENS` — the default is 32,000.** On a
+65,536-context model that leaves 33,536 for input, and once the conversation
+grows past it *every* request fails:
+
+```
+HTTP 500: you requested 32000 output tokens and your prompt contains
+at least 33537 input tokens, for a total of at least 65537 tokens
+```
+
+**3. `CLAUDE_CODE_MAX_CONTEXT_TOKENS` must be the usable *input* budget, not
+the context window.** Auto-compaction does not subtract the output
+reservation — it fills input up to the number you give it and adds
+`max_output` on top. Give it `context − max_output`.
+
+Getting all three right still was not enough: it then hit the compaction
+thrashing above.
+
 ## Gotchas that cost real time
 
 Things that were not obvious and are not in the docs:
@@ -276,12 +350,17 @@ Read the numbers with these in mind:
   a comparison of *usable local setups*, not of model weights under equal
   conditions.
 - **Bandwidth figure is vendor spec**, not independently measured.
+- **The harness comparison is one model, one run.** Claude Code was tested
+  against Laguna only, at 65K context. A third harness (Oh My Pi) is being
+  measured separately and is not in the table yet.
 
 ## Layout
 
 ```
 bench/
   run.sh                  runs all four tasks for one model, then grades
+  run-claude-code.sh      same four tasks, Claude Code as the harness
+  run-omp.sh              same four tasks, Oh My Pi as the harness
   tasks/<task>/
     task.md               the prompt handed to the agent, verbatim
     seed/                 starting repository (absent for t3-neubau)
@@ -291,8 +370,10 @@ results/
   logs/                   per-model timeline of each run
 tools/
   model-switch            starts exactly one model, stops the others
+  cc-local                launches Claude Code against a local model
 configs/
   opencode.json           the five providers as configured
+  omp-models.yml          the same models for Oh My Pi
 ```
 
 Reproducing a run:

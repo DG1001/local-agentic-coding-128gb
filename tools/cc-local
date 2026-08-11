@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+# cc-local — startet Claude Code gegen ein lokal laufendes Modell.
+#
+# Beide Server auf dem GX10 sprechen die Anthropic Messages API nativ:
+# ds4-server bringt sie mit, vLLM hat seit 0.26 einen eigenen anthropic-
+# Entrypoint (/v1/messages, /v1/messages/count_tokens). Ein Uebersetzungs-
+# proxy wie LiteLLM oder claude-code-router wird also NICHT gebraucht.
+#
+#   cc-local ds4          DeepSeek-V4-Flash   :8888
+#   cc-local laguna       Laguna-S-2.1        :8889
+#   cc-local kat          KAT-Coder-V2.5      :8889
+#   cc-local agentworld   Qwen-AgentWorld-35B :8889
+#   cc-local qwen27b      Qwen3.6-27B         :8889
+#
+# Alles nach dem Modellnamen wird an claude durchgereicht:
+#   cc-local kat -p "Was macht dieses Repo?"
+set -uo pipefail
+
+case "${1:-}" in
+    ds4)        PORT=8888; MODELL=deepseek-v4-flash;     CTX=65536  ;;
+    laguna)     PORT=8889; MODELL=laguna-s-2.1;          CTX=65536  ;;
+    kat)        PORT=8889; MODELL=kat-coder-v2.5;        CTX=131072 ;;
+    agentworld) PORT=8889; MODELL=qwen-agentworld-35b;   CTX=131072 ;;
+    qwen27b)    PORT=8889; MODELL=qwen3.6-27b;           CTX=131072 ;;
+    *)          sed -n '2,20p' "$0"; exit 2 ;;
+esac
+shift
+
+if ! curl -sf --max-time 3 "http://127.0.0.1:$PORT/v1/models" >/dev/null 2>&1; then
+    echo "FEHLER: auf :$PORT antwortet nichts. Erst 'model-switch ${MODELL}' bzw." >&2
+    echo "        den passenden Namen starten (model-switch status zeigt den Stand)." >&2
+    exit 1
+fi
+
+# Claude Code kennt diese Modellnamen nicht und wuerde sonst 200k Kontext
+# annehmen -- die Auto-Kompaktierung griffe zu spaet und der Server riegelte
+# mitten in der Sitzung ab.
+# Claude Codes Auto-Kompaktierung rechnet die Ausgabereservierung NICHT
+# gegen: sie laesst die Eingabe bis an das genannte Fenster wachsen und legt
+# max_output obendrauf -- Ergebnis ist HTTP 500 "total exceeds context".
+# Deshalb wird hier das nutzbare EINGABEBUDGET genannt, nicht die
+# Fenstergroesse: CTX minus der Ausgabegrenze.
+export CLAUDE_CODE_MAX_CONTEXT_TOKENS=$(( CTX - 16384 ))
+# Claude Code fordert sonst 32000 Ausgabetokens an. Bei einem 65536er Modell
+# bleiben damit nur 33536 fuer die Eingabe, und sobald die Unterhaltung
+# darueber hinauswaechst, scheitert JEDE Anfrage mit HTTP 500. 16384 ist
+# derselbe Wert, mit dem opencode laeuft (limit.output in opencode.json).
+export CLAUDE_CODE_MAX_OUTPUT_TOKENS=16384
+
+export ANTHROPIC_BASE_URL="http://127.0.0.1:$PORT"
+export ANTHROPIC_AUTH_TOKEN=unused
+export ANTHROPIC_API_KEY=unused
+export ANTHROPIC_MODEL="$MODELL"
+export ANTHROPIC_SMALL_FAST_MODEL="$MODELL"
+export ANTHROPIC_DEFAULT_OPUS_MODEL="$MODELL"
+export ANTHROPIC_DEFAULT_SONNET_MODEL="$MODELL"
+export ANTHROPIC_DEFAULT_HAIKU_MODEL="$MODELL"
+
+exec claude "$@"
