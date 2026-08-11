@@ -326,8 +326,8 @@ a finished turn.
 ### Testing that theory: a fourth harness, written to check one claim
 
 The paragraph above is a hypothesis, and hypotheses in this space are cheap.
-So it got built: a minimal agent harness in Java 21, no dependencies, 2,700
-lines across 25 files including its own tests. It exists to check one thing —
+So it got built: a minimal agent harness in Java 21, no dependencies —
+[**jaja**](https://github.com/DG1001/jaja), source and tests included. It exists to check one thing —
 whether the `t3` failure is a harness behaviour or a model limit — and it is
 deliberately not competitive with the tools it is measured against.
 
@@ -517,6 +517,7 @@ bench/
   run-claude-code.sh      same four tasks, Claude Code as the harness
   run-omp.sh              same four tasks, Oh My Pi as the harness
   run-java.sh             same four tasks, the purpose-built Java harness
+                          (github.com/DG1001/jaja)
   tasks/<task>/
     task.md               the prompt handed to the agent, verbatim
     seed/                 starting repository (absent for t3-neubau)
