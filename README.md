@@ -244,6 +244,10 @@ output) — only the agent harness differs. Laguna-S-2.1 throughout:
 | **Oh My Pi** | **86 / 86** | 45:35 |
 | Claude Code | **9 / 86** | 1:58:51 |
 
+(A fourth harness, written later to test one specific claim, also reaches
+86/86 here in 37:13 — see
+[below](#testing-that-theory-a-fourth-harness-written-to-check-one-claim).)
+
 Every one of Claude Code's four tasks ended with the same error:
 
 ```
@@ -331,6 +335,8 @@ So it got built: a minimal agent harness in Java 21, no dependencies —
 whether the `t3` failure is a harness behaviour or a model limit — and it is
 deliberately not competitive with the tools it is measured against.
 
+**DeepSeek-V4-Flash:**
+
 | Task | Java harness | opencode | Oh My Pi | Claude Code |
 |---|---|---|---|---|
 | t1-debug (15) | 15 · 509 s | 15 · **283 s** | 15 · 575 s | 15 · 1508 s |
@@ -339,18 +345,35 @@ deliberately not competitive with the tools it is measured against.
 | t4-feature (21) | 21 · 563 s | 21 · **489 s** | 21 · 866 s | — |
 | **Total** | **86 / 86** · 40 min | **86 / 86** · **27 min** | 53 / 86 · 51 min | — |
 
+**Laguna-S-2.1**, run afterwards to check the result was not specific to one
+model:
+
+| Task | Java harness | opencode | Oh My Pi | Claude Code |
+|---|---|---|---|---|
+| t1-debug (15) | 15 · 215 s | 15 · **152 s** | 15 · 526 s | **9** · 984 s |
+| t2-refactor (17) | 17 · 304 s | 17 · **266 s** | 17 · 453 s | **0** · 893 s |
+| t3-neubau (33) | 33 · 1400 s | 33 · **973 s** | 33 · 1180 s | **0** · 3433 s |
+| t4-feature (21) | 21 · **314 s** | 21 · 465 s | 21 · 576 s | **0** · 1821 s |
+| **Total** | **86 / 86** · 37 min | **86 / 86** · **31 min** | **86 / 86** · 45 min | 9 / 86 · 1:58 h |
+
 **The answer is that it was a harness behaviour.** The same model, on the same
 task, with the same 65,536 / 16,384 limits, produces a complete and correct
 implementation once the harness treats a `length` stop with no tool call as
 something to retry rather than as a finished turn. Nothing about the model
 changed.
 
-Read the rest of that table honestly, though: **matching opencode is the
+Read the rest of those tables honestly, though: **matching opencode is the
 ceiling here, not a win.** The Java harness scores exactly what opencode scores
-and takes 47% longer to do it. A hand-written harness reaching parity says more
-about how few moving parts an agent loop actually needs than about the harness
-— and these four tasks are not hard enough to separate two harnesses that both
-finish them.
+and takes 20–47% longer to do it. A hand-written harness reaching parity says
+more about how few moving parts an agent loop actually needs than about the
+harness — and these four tasks are not hard enough to separate two harnesses
+that both finish them.
+
+The gap is not uniform, which is worth more than the totals. On Laguna's
+`t4-feature` the Java harness is the fastest of the four (314 s against
+opencode's 465 s); the entire deficit is `t3-neubau`, where Laguna took 60 tool
+calls and worked in very small steps. Where a task rewards deliberation the
+extra turns cost wall clock; where it rewards a direct edit they do not.
 
 #### What the tool set is worth, measured
 
@@ -498,12 +521,13 @@ Read the numbers with these in mind:
   models, Claude Code only Laguna (at 65K context — it never got far enough to
   be worth extending). Seven recovered points across three distinct defects is
   a pattern, not a proof; a second run per pairing could move any single number.
-- **The Java harness ran once, with one model.** It answers a single question
-  — was the `t3` failure a harness behaviour — and answers it clearly, because
-  the failure mode was specific and the fix targeted it directly. It is not
-  evidence that it would hold up on harder work, on other models, or on
-  anything resembling a real codebase. It was written to test a claim, not to
-  be used.
+- **The Java harness ran once per model, on two of the five.** It answers a
+  single question — was the `t3` failure a harness behaviour — and answers it
+  clearly, because the failure mode was specific and the fix targeted it
+  directly. Both models reaching 86/86 makes the parity harder to dismiss as
+  luck, but it is still two runs. It is not evidence that it would hold up on
+  harder work, on the other three models, or on anything resembling a real
+  codebase. It was written to test a claim, not to be used.
 - **Qwen3.6-27B was deliberately skipped in the Oh My Pi round.** At 4.5 tok/s
   it took 187 minutes under opencode; at Oh My Pi's 2–3× that is over ten hours
   for a model already shown to be impractical here. An omission, not a gap in

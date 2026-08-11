@@ -1,63 +1,119 @@
 {
   "harness": "purpose-built Java harness (Java 21, no dependencies)",
-  "model": "DeepSeek-V4-Flash",
-  "context_window": 65536,
+  "repository": "https://github.com/DG1001/jaja",
   "max_output": 16384,
   "max_turns": 80,
   "note": "Built to test whether the Oh My Pi t3 failure was a harness behaviour or a model limit. Defends against a 'length' stop with no tool call by retrying with a nudge to act.",
-  "tasks": [
+  "runs": [
     {
-      "task": "t1-debug",
-      "seconds": 509,
-      "exit_code": 0,
-      "hidden_passed": 15,
-      "hidden_total": 15,
-      "turns": 12,
-      "tool_calls": 18,
-      "own_tests": "9 passed in 0.00s"
+      "model": "DeepSeek-V4-Flash",
+      "context_window": 65536,
+      "tasks": [
+        {
+          "task": "t1-debug",
+          "seconds": 509,
+          "exit_code": 0,
+          "hidden_passed": 15,
+          "hidden_total": 15,
+          "turns": 12,
+          "tool_calls": 18,
+          "own_tests": "9 passed in 0.00s"
+        },
+        {
+          "task": "t2-refactor",
+          "seconds": 197,
+          "exit_code": 0,
+          "hidden_passed": 17,
+          "hidden_total": 17,
+          "turns": 15,
+          "tool_calls": 19,
+          "own_tests": "13 passed in 0.01s"
+        },
+        {
+          "task": "t3-neubau",
+          "seconds": 1122,
+          "exit_code": 0,
+          "hidden_passed": 33,
+          "hidden_total": 33,
+          "turns": 21,
+          "tool_calls": 24,
+          "own_tests": "26 passed in 0.01s"
+        },
+        {
+          "task": "t4-feature",
+          "seconds": 563,
+          "exit_code": 0,
+          "hidden_passed": 21,
+          "hidden_total": 21,
+          "turns": 18,
+          "tool_calls": 26,
+          "own_tests": "19 passed in 0.02s"
+        }
+      ],
+      "total_hidden_passed": 86,
+      "total_hidden": 86,
+      "total_seconds": 2391,
+      "tool_usage": {
+        "bash": 23,
+        "read": 22,
+        "write": 16,
+        "edit": 15,
+        "glob": 5,
+        "grep": 1
+      },
+      "turns_per_task": {
+        "t1-debug": 12,
+        "t2-refactor": 15,
+        "t3-neubau": 21,
+        "t4-feature": 18
+      }
     },
     {
-      "task": "t2-refactor",
-      "seconds": 197,
-      "exit_code": 0,
-      "hidden_passed": 17,
-      "hidden_total": 17,
-      "turns": 15,
-      "tool_calls": 19,
-      "own_tests": "13 passed in 0.01s"
-    },
-    {
-      "task": "t3-neubau",
-      "seconds": 1122,
-      "exit_code": 0,
-      "hidden_passed": 33,
-      "hidden_total": 33,
-      "turns": 21,
-      "tool_calls": 24,
-      "own_tests": "26 passed in 0.01s"
-    },
-    {
-      "task": "t4-feature",
-      "seconds": 563,
-      "exit_code": 0,
-      "hidden_passed": 21,
-      "hidden_total": 21,
-      "turns": 18,
-      "tool_calls": 26,
-      "own_tests": "19 passed in 0.02s"
+      "model": "Laguna-S-2.1",
+      "context_window": 65536,
+      "tasks": [
+        {
+          "task": "t1-debug",
+          "seconds": 215,
+          "exit_code": 0,
+          "hidden_passed": 15,
+          "hidden_total": 15,
+          "tool_calls": 18,
+          "own_tests": "9 passed in 0.00s"
+        },
+        {
+          "task": "t2-refactor",
+          "seconds": 304,
+          "exit_code": 0,
+          "hidden_passed": 17,
+          "hidden_total": 17,
+          "tool_calls": 23,
+          "own_tests": "19 passed in 0.01s"
+        },
+        {
+          "task": "t3-neubau",
+          "seconds": 1400,
+          "exit_code": 0,
+          "hidden_passed": 33,
+          "hidden_total": 33,
+          "tool_calls": 60,
+          "own_tests": "63 passed in 0.03s"
+        },
+        {
+          "task": "t4-feature",
+          "seconds": 314,
+          "exit_code": 0,
+          "hidden_passed": 21,
+          "hidden_total": 21,
+          "tool_calls": 25,
+          "own_tests": "23 passed in 0.04s"
+        }
+      ],
+      "total_hidden_passed": 86,
+      "total_hidden": 86,
+      "total_seconds": 2233
     }
   ],
-  "total_hidden_passed": 86,
-  "total_hidden": 86,
-  "total_seconds": 2391,
-  "tool_usage": {
-    "bash": 23,
-    "read": 22,
-    "write": 16,
-    "edit": 15,
-    "glob": 5,
-    "grep": 1
-  },
   "earlier_revision_read_bash_only": {
     "t3-neubau": {
       "hidden_passed": 31,

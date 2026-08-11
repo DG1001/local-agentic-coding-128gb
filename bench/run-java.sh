@@ -1,14 +1,15 @@
 #!/bin/bash
-# lauf-java.sh <kennung> <modellname>
+# lauf-java.sh <kennung> <modellname> [basis-url]
 # Wie lauf.sh, nur mit dem selbstgebauten Java-Harness statt opencode.
 # Ergebnisse landen in runs/<kennung>/.
 set -u
 
 KENNUNG="$1"
 MODELL="$2"
-BASIS="$BASIS"
+BASISURL="${3:-http://127.0.0.1:8888/v1}"
+BASIS="$HOME/bench2"
 ZIEL="$BASIS/runs/$KENNUNG"
-HARNESS="$HOME/java-harness"
+JAJA="$HOME/Developer/github.com/jaja/target/jaja-0.1.0.jar"
 JAVA=/usr/lib/jvm/java-21-openjdk-arm64/bin/java
 AUFGABEN="t1-debug t2-refactor t3-neubau t4-feature"
 
@@ -35,8 +36,9 @@ for A in $AUFGABEN; do
 
     echo "### $A gestartet $(date +%H:%M:%S)" >> "$ZIEL/verlauf.log"
     T0=$(date +%s)
-    timeout 5400 "$JAVA" -cp "$HARNESS/out" de.dg1001.harness.Main \
+    timeout 5400 "$JAVA" -jar "$JAJA" \
         --model "$MODELL" \
+        --base-url "$BASISURL" \
         --cwd "$W" \
         --prompt-file "$BASIS/tasks/$A/aufgabe.md" \
         --max-turns 80 \
