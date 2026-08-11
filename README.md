@@ -5,7 +5,9 @@ ASUS Ascent GX10 — **NVIDIA GB10, 128 GB unified memory**, the same chip and
 memory configuration as the NVIDIA DGX Spark. Everything ran locally through
 [opencode](https://opencode.ai), [Claude Code](https://claude.com/claude-code)
 and [Oh My Pi](https://github.com/can1357/oh-my-pi) against endpoints on
-`127.0.0.1` — no cloud API, no per-token cost.
+`127.0.0.1` — no cloud API, no per-token cost. A fourth, purpose-built harness
+was added later to test one specific claim; see
+[below](#testing-that-theory-a-fourth-harness-written-to-check-one-claim).
 
 Models: DeepSeek-V4-Flash, Laguna-S-2.1 (poolside), KAT-Coder-V2.5,
 Qwen-AgentWorld-35B-A3B, Qwen3.6-27B. Served with vLLM and a
@@ -48,7 +50,8 @@ not a software problem and it is not tunable. See below.
 - vLLM 0.26.0 in Docker for four models; `ds4-server` (llama.cpp-derived,
   from [DeepSeek-v4-Flash-One-DGX-Spark](https://github.com/MiaAI-Lab/DeepSeek-v4-Flash-One-DGX-Spark))
   for DeepSeek
-- opencode 1.18.14, Claude Code 2.1.226 and Oh My Pi 17.2.12 as agent harnesses
+- opencode 1.18.14, Claude Code 2.1.226 and Oh My Pi 17.2.12 as agent harnesses,
+  plus a purpose-built Java harness for one follow-up question
 
 Comparable hardware: the NVIDIA DGX Spark uses the same GB10 superchip and the
 same 128 GB unified LPDDR5X, so the bandwidth findings below transfer directly.
@@ -320,6 +323,71 @@ A harness could defend against this: if a turn ends with `stopReason: "length"`
 and produced no tool call, retry with a nudge to act rather than treating it as
 a finished turn.
 
+### Testing that theory: a fourth harness, written to check one claim
+
+The paragraph above is a hypothesis, and hypotheses in this space are cheap.
+So it got built: a minimal agent harness in Java 21, no dependencies, 2,700
+lines across 25 files including its own tests. It exists to check one thing —
+whether the `t3` failure is a harness behaviour or a model limit — and it is
+deliberately not competitive with the tools it is measured against.
+
+| Task | Java harness | opencode | Oh My Pi | Claude Code |
+|---|---|---|---|---|
+| t1-debug (15) | 15 · 509 s | 15 · **283 s** | 15 · 575 s | 15 · 1508 s |
+| t2-refactor (17) | 17 · **197 s** | 17 · 213 s | 17 · 581 s | — |
+| t3-neubau (33) | **33** · 1122 s | **33** · **564 s** | **0** · 1014 s | — |
+| t4-feature (21) | 21 · 563 s | 21 · **489 s** | 21 · 866 s | — |
+| **Total** | **86 / 86** · 40 min | **86 / 86** · **27 min** | 53 / 86 · 51 min | — |
+
+**The answer is that it was a harness behaviour.** The same model, on the same
+task, with the same 65,536 / 16,384 limits, produces a complete and correct
+implementation once the harness treats a `length` stop with no tool call as
+something to retry rather than as a finished turn. Nothing about the model
+changed.
+
+Read the rest of that table honestly, though: **matching opencode is the
+ceiling here, not a win.** The Java harness scores exactly what opencode scores
+and takes 47% longer to do it. A hand-written harness reaching parity says more
+about how few moving parts an agent loop actually needs than about the harness
+— and these four tasks are not hard enough to separate two harnesses that both
+finish them.
+
+#### What the tool set is worth, measured
+
+An earlier revision shipped only `read` and `bash`; the model had to do
+everything else through the shell. Adding `write`, `edit`, `glob` and `grep`
+changed two numbers in opposite directions:
+
+| Task | read + bash | six tools |
+|---|---|---|
+| t3-neubau | 31 / 33 · 1293 s | **33 / 33** · **1122 s** |
+| t1-debug | 15 / 15 · **319 s** | 15 / 15 · 509 s |
+
+`t3` writes a lot of files, and dedicated tools both fixed the two missing
+points and cut the wall clock. `t1` is a bug hunt across a handful of files,
+where the longer tool list buys nothing and its prefill cost stays on the
+bill — and on this hardware prefill is the expensive part. Tool sets are not
+free, and "more tools" is not a direction, it is a trade against the task.
+
+Actual usage across all four tasks: `bash` 23, `read` 22, `write` 16,
+`edit` 15, `glob` 5, `grep` 1. Both search tools together account for 7% of
+calls — on a four-task benchmark with small repositories, which is exactly the
+setting where they should matter least.
+
+Two implementation notes that cost real debugging time, both invisible in
+normal operation:
+
+- **A timeout that never fires.** Reading a subprocess's output with
+  `readAllBytes()` *before* `waitFor(timeout)` blocks in the read, so the
+  timeout is dead code. Everything works until the first command that hangs,
+  and then the run stops forever. Fixed by reading on a separate virtual
+  thread, concurrently with the wait.
+- **Java's `PathMatcher` and `**/`.** The glob `**/*.py` requires at least one
+  directory level, so it does not match `main.py` in the project root. Models
+  write that pattern constantly and mean "all of them". Without a fallback that
+  also tries the pattern with the `**/` stripped, a model silently fails to see
+  the main file of a flat project.
+
 ### No translation proxy needed
 
 Every guide says to put LiteLLM or claude-code-router between Claude Code and
@@ -430,6 +498,12 @@ Read the numbers with these in mind:
   models, Claude Code only Laguna (at 65K context — it never got far enough to
   be worth extending). Seven recovered points across three distinct defects is
   a pattern, not a proof; a second run per pairing could move any single number.
+- **The Java harness ran once, with one model.** It answers a single question
+  — was the `t3` failure a harness behaviour — and answers it clearly, because
+  the failure mode was specific and the fix targeted it directly. It is not
+  evidence that it would hold up on harder work, on other models, or on
+  anything resembling a real codebase. It was written to test a claim, not to
+  be used.
 - **Qwen3.6-27B was deliberately skipped in the Oh My Pi round.** At 4.5 tok/s
   it took 187 minutes under opencode; at Oh My Pi's 2–3× that is over ten hours
   for a model already shown to be impractical here. An omission, not a gap in
@@ -442,6 +516,7 @@ bench/
   run.sh                  runs all four tasks for one model, then grades
   run-claude-code.sh      same four tasks, Claude Code as the harness
   run-omp.sh              same four tasks, Oh My Pi as the harness
+  run-java.sh             same four tasks, the purpose-built Java harness
   tasks/<task>/
     task.md               the prompt handed to the agent, verbatim
     seed/                 starting repository (absent for t3-neubau)
@@ -449,6 +524,7 @@ bench/
 results/
   measurements.json       opencode runs, machine-readable
   omp-measurements.json   Oh My Pi runs, machine-readable
+  java-measurements.json  purpose-built-harness run, machine-readable
   logs/                   per-model, per-harness timeline of each run
 tools/
   model-switch            starts exactly one model, stops the others
