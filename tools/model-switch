@@ -11,6 +11,7 @@
 #   model-switch agentworld   Qwen-AgentWorld-35B :8889  (vLLM)
 #   model-switch qwen27b      Qwen3.6-27B         :8889  (vLLM)
 #   model-switch nemotron     Nemotron-3.5-Light. :8889  (vLLM)
+#   model-switch nemotronspec dasselbe + DSpark   :8889  (vLLM 0.27.1)
 #   model-switch qwen36moe    Qwen3.6-35B-A3B     :8889  (vLLM)
 #   model-switch stop         alles stoppen
 #   model-switch status       was laeuft gerade
@@ -29,7 +30,34 @@ IMAGE=vllm/vllm-openai:latest
 # Setzt DIR, SERVED, DEF_CTX und das Array EXTRA fuer das gewaehlte Modell.
 load_spec() {
     EXTRA=()
+    # Je Modell uebersteuerbar. Nemotrons Entwurfsmodell braucht ein neueres
+    # vLLM als der Rest der Tabelle; alle anderen bleiben auf dem Abbild, mit
+    # dem die veroeffentlichten Zahlen gemessen wurden.
+    ABBILD="$IMAGE"
     case "$1" in
+        nemotronspec)
+            # Das Rezept aus der Modellkarte, woertlich -- inklusive der
+            # Version, an der der erste Versuch gescheitert ist: vLLM 0.26.0
+            # kennt die Architektur Qwen3DSparkModel nicht und bricht beim
+            # Einlesen der Einbettungsmatrix ab (512 gegen 256). Die Karte
+            # nennt ausdruecklich v0.27.1.
+            ABBILD=vllm/vllm-openai:v0.27.1
+            DIR=NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4
+            SERVED=nemotron-3.5-lightning; DEF_CTX=131072
+            # Punktschreibweise wie in der Karte, nicht die JSON-Form: bei einer
+            # unbekannten Architektur meldet die JSON-Form einen Formfehler
+            # tief im Lader, die Punktform scheitert frueh und lesbar.
+            EXTRA=(--speculative_config.model "/models/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4-DSpark"
+                   --speculative_config.num_speculative_tokens 3
+                   --moe-backend marlin
+                   --max-num-batched-tokens 8192
+                   --enable-prefix-caching
+                   --mamba-backend flashinfer
+                   --mamba-cache-mode align
+                   --reasoning-parser nemotron_v3
+                   --tool-call-parser qwen3_coder
+                   --enable-auto-tool-choice) ;;
+
         nemotron)
             # Startzeile nach NVIDIAs Empfehlung fuer DGX Spark. Das Entwurfs-
             # modell (DSpark) ist dort ausdruecklich die Vorgabe fuer einzelne
@@ -163,13 +191,13 @@ start_vllm() {
     # Bewusst OHNE --rm: stirbt der Container, bleiben die Logs zur Diagnose.
     docker rm -f "$CONTAINER" >/dev/null 2>&1 || true
 
-    echo "Starte $DIR (vLLM, ctx ${CTX:-$DEF_CTX}) ..."
+    echo "Starte $DIR (${ABBILD##*:}, ctx ${CTX:-$DEF_CTX}) ..."
     docker run -d --name "$CONTAINER" \
         --gpus all --ipc=host \
         -v "$MODELS:/models:ro" \
         -v "$HOME/.cache/vllm:/root/.cache/vllm" \
         -p "127.0.0.1:$VLLM_PORT:8000" \
-        "$IMAGE" \
+        "$ABBILD" \
         "/models/$DIR" \
         --served-model-name "$SERVED" \
         --enable-auto-tool-choice \
@@ -204,7 +232,7 @@ status() {
 
 case "${1:-status}" in
     ds4)                          start_ds4 ;;
-    laguna|kat|agentworld|qwen27b|nemotron|qwen36moe) start_vllm "$1" ;;
+    laguna|kat|agentworld|qwen27b|nemotron|nemotronspec|qwen36moe) start_vllm "$1" ;;
     stop)   stop_ds4; stop_vllm; echo "Alles gestoppt."; free -h | awk 'NR==2{print "Frei: "$7}' ;;
     status) status ;;
     *)      sed -n '2,18p' "$0"; exit 2 ;;

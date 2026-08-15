@@ -1,7 +1,7 @@
 {
   "harness": "purpose-built Java harness (Java 21, no dependencies)",
   "repository": "https://github.com/DG1001/jaja",
-  "max_output": 16384,
+  "max_output": "16384 for the DeepSeek and Laguna runs (65,536 context); 32768 for the Nemotron run (131,072 context, matching its opencode run)",
   "max_turns": 80,
   "note": "Built to test whether the Oh My Pi t3 failure was a harness behaviour or a model limit. Defends against a 'length' stop with no tool call by retrying with a nudge to act.",
   "runs": [
@@ -112,6 +112,70 @@
       "total_hidden_passed": 86,
       "total_hidden": 86,
       "total_seconds": 2233
+    },
+    {
+      "model": "NVIDIA-Nemotron-3.5-Lightning-30B-A3B",
+      "context_window": 131072,
+      "max_output": 32768,
+      "note": "Run to test whether Nemotron's 0/17 on t2-refactor under opencode was a compaction artifact. It was not: without any compaction, and with 46% of the context window unused, the model built a circular import between wandler/__init__.py and wandler/basis.py and spent all 80 turns failing to repair it.",
+      "tasks": [
+        {
+          "task": "t1-debug",
+          "seconds": 156,
+          "exit_code": 0,
+          "hidden_passed": 15,
+          "hidden_total": 15,
+          "turns": 35,
+          "tool_calls": 34,
+          "own_tests": "9 passed in 0.00s"
+        },
+        {
+          "task": "t2-refactor",
+          "seconds": 473,
+          "exit_code": 1,
+          "hidden_passed": 0,
+          "hidden_total": 17,
+          "turns": 80,
+          "tool_calls": 86,
+          "own_tests": "1 error in 0.05s"
+        },
+        {
+          "task": "t3-neubau",
+          "seconds": 419,
+          "exit_code": 0,
+          "hidden_passed": 33,
+          "hidden_total": 33,
+          "turns": 68,
+          "tool_calls": 67,
+          "own_tests": "29 passed in 0.01s"
+        },
+        {
+          "task": "t4-feature",
+          "seconds": 292,
+          "exit_code": 0,
+          "hidden_passed": 16,
+          "hidden_total": 21,
+          "turns": 75,
+          "tool_calls": 74,
+          "own_tests": "21 passed in 0.03s"
+        }
+      ],
+      "total_hidden_passed": 64,
+      "total_hidden": 86,
+      "total_seconds": 1340,
+      "tool_usage": {
+        "glob": 3,
+        "read": 35,
+        "bash": 169,
+        "edit": 29,
+        "write": 25
+      },
+      "turns_per_task": {
+        "t1-debug": 35,
+        "t2-refactor": 80,
+        "t3-neubau": 68,
+        "t4-feature": 75
+      }
     }
   ],
   "earlier_revision_read_bash_only": {

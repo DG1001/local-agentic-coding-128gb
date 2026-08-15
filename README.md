@@ -6,7 +6,7 @@ memory configuration as the NVIDIA DGX Spark. Everything ran locally through
 [opencode](https://opencode.ai), [Claude Code](https://claude.com/claude-code)
 and [Oh My Pi](https://github.com/can1357/oh-my-pi) against endpoints on
 `127.0.0.1` — no cloud API, no per-token cost. A fourth, purpose-built harness
-was added later to test one specific claim; see
+was added later to test specific claims about the other three; see
 [below](#testing-that-theory-a-fourth-harness-written-to-check-one-claim).
 
 Models: DeepSeek-V4-Flash, Laguna-S-2.1 (poolside), KAT-Coder-V2.5,
@@ -22,8 +22,9 @@ breaking chat templates, KV cache blowing past the budget, system prompt size
 pushing models off a cliff. On 128 GB almost none of that mattered: with
 131,072-token context windows and millions of tokens of KV cache to spare, no
 model here ran out of room, and four of the first five got at least 84 of 86
-tests right. The two models added later scored markedly lower — and for reasons
-worth reading, because neither is about capability.
+tests right. The two models added later scored markedly lower, and in both cases
+the whole gap is one task graded all-or-nothing — worth reading before the
+ranking is taken at face value.
 
 What limits you here is **memory bandwidth**, and it decides which models are
 worth running at all. And — the finding that surprised us most — **which agent
@@ -46,10 +47,11 @@ Three models scored perfectly. The interesting column is wall clock: the dense
 27B needed **7.3× longer than DeepSeek** for the exact same result. That gap is
 not a software problem and it is not tunable. See below.
 
-The bottom two rows are the later additions and they read worse than they are:
-**each lost all 17 points of one task, and neither loss was a failure to solve
-it.** Details in [three ways to fail the same
-task](#three-ways-to-fail-the-same-task).
+The bottom two rows are the later additions, and **each lost all 17 points of
+one and the same task** — `t2-refactor`, on an import path the task names
+verbatim. Remove that task and both sit in the same band as the rest. Whether
+that makes them better than they look depends on the model: see [three ways to
+fail the same task](#three-ways-to-fail-the-same-task).
 
 ## Hardware
 
@@ -264,7 +266,7 @@ else, each in a different way, and each with a green self-written suite:
 |---|---|---|---|
 | Qwen-AgentWorld-35B | correct object in `einheiten.py`, plus a **second** one in `__init__.py` that shadowed it | 12 pass | 14 / 17 |
 | Qwen3.6-35B-A3B | put the object in **`basis.py`** and re-exported it from `__init__.py` | 21 pass | **0 / 17** |
-| Nemotron-3.5-Lightning | had it right, verified it, then destroyed it (see below) | collection error | **0 / 17** |
+| Nemotron-3.5-Lightning | had it right, verified it, then lost it to compaction — and failed the task again in a harness that never compacts | collection error | **0 / 17** |
 
 ("Own tests" is that model's own suite for `t2` alone.)
 
@@ -326,8 +328,44 @@ that starts over. Nemotron is a heavy reasoner, which is why it hit the limit at
 all — at 65,536 context the same task compacted too, and there the model
 responded by asking the user what to do next and stopping.
 
-Worth stating plainly: **this is a harness result, not a model result.** Nothing
-in the 0/17 measures Nemotron's ability to refactor Python.
+#### The obvious next question, and the answer we did not expect
+
+An earlier version of this section ended here, with the claim that the 0/17 was
+"a harness result, not a model result" and said nothing about Nemotron's ability
+to refactor Python. That claim was cheap to test and it did not survive.
+
+The same model ran the same four tasks again through the Java harness described
+[below](#testing-that-theory-a-fourth-harness-written-to-check-one-claim) — same
+131,072-token window, same 32,768-token output cap, but a harness that **elides**
+old tool results instead of summarizing the conversation. There is no compaction
+step to lose state in.
+
+`t2-refactor` came out **0 / 17 again.** Not from compaction — from a circular
+import between `wandler/__init__.py` and `wandler/basis.py` that the model spent
+all 80 turns failing to repair:
+
+```
+ImportError: cannot import name 'MITGELIEFERT' from partially initialized
+module 'wandler.basis' (most likely due to a circular import)
+```
+
+It hit the turn limit at **52,183 of 96,304 usable tokens — 46% of the window
+still free.** 63 of its 86 tool calls were `bash`, most of them one-liners
+checking whether the last edit had helped. It never got as far as the working
+solution the opencode run had already produced.
+
+So the honest reading is the uncomfortable one:
+
+- **What is true:** opencode's compaction destroyed a complete, verified
+  solution. The `git checkout -- .` is in the log, and the summary that caused
+  it was a generic template about media attachments that did not apply.
+- **What is not true:** that the compaction is *why* the score is zero. Given a
+  harness that never compacts, more turns and half the context unused, the model
+  fails the same task by a different route.
+
+Two runs, two roads into the same unimportable package. A model that solves a
+task once and then loops on a circular import when asked again is unreliable on
+that task — not merely unlucky in one harness.
 
 ### Test volume does not predict correctness
 
@@ -404,9 +442,12 @@ opencode does the same four tasks on the same budget without compacting once.
 
 Compaction is not a Claude Code problem, though — it is a compaction problem.
 opencode compacted twice across all runs in this repo, and one of those two
-[cost a model a solved task](#nemotron-solved-it-then-threw-it-away). The
-difference is frequency, not kind: opencode's smaller footprint means it gets
-there rarely, on the tasks where a model reasons at length.
+[destroyed a solution a model had already finished and
+verified](#nemotron-solved-it-then-threw-it-away). The difference is frequency,
+not kind: opencode's smaller footprint means it gets there rarely, on the tasks
+where a model reasons at length. (That model went on to fail the same task in a
+harness that never compacts, so the compaction cost it work, not the score —
+read the section before quoting it.)
 
 ### The surprise: the harness changes *correctness*, not just speed
 
@@ -475,8 +516,9 @@ a finished turn.
 
 The paragraph above is a hypothesis, and hypotheses in this space are cheap.
 So it got built: a minimal agent harness in Java 21, no dependencies —
-[**jaja**](https://github.com/DG1001/jaja), source and tests included. It exists to check one thing —
-whether the `t3` failure is a harness behaviour or a model limit — and it is
+[**jaja**](https://github.com/DG1001/jaja), source and tests included. It was
+built to check one thing — whether the `t3` failure is a harness behaviour or a
+model limit — and later reused for a second question about Nemotron. It is
 deliberately not competitive with the tools it is measured against.
 
 **DeepSeek-V4-Flash:**
@@ -518,6 +560,38 @@ The gap is not uniform, which is worth more than the totals. On Laguna's
 opencode's 465 s); the entire deficit is `t3-neubau`, where Laguna took 60 tool
 calls and worked in very small steps. Where a task rewards deliberation the
 extra turns cost wall clock; where it rewards a direct edit they do not.
+
+**Nemotron-3.5-Lightning**, added later for a different question — whether its
+`t2` zero was [opencode's compaction](#nemotron-solved-it-then-threw-it-away).
+Both runs at 131,072 / 32,768, so the harness is the only difference:
+
+| Task | Java harness | opencode |
+|---|---|---|
+| t1-debug (15) | **15** · **156 s** | 14 · 269 s |
+| t2-refactor (17) | 0 · **473 s** | 0 · 1341 s |
+| t3-neubau (33) | **33** · 419 s | 32 · **316 s** |
+| t4-feature (21) | 16 · 292 s | **17** · **263 s** |
+| **Total** | **64 / 86** · **22:20** | 63 / 86 · 36:29 |
+
+One point apart on the total, and **every single task different underneath.**
+The Java harness gains a point on `t1` (commercial rounding, which opencode's
+run got wrong) and one on `t3`; it loses one on `t4`. Even the `t4` losses are
+disjoint: under opencode, reservations did not survive a reload and old files
+were not migrated; under the Java harness both work and the reservation logic
+itself is wrong instead. Same model, same task, same five points lost — nothing
+in common about *which* five.
+
+That is the useful contrast with the Oh My Pi comparison above, where seven
+recovered points traced to three named defects and the direction was consistent.
+Here the differences cancel. **A one-point total gap across two harnesses is
+noise, and the per-task movement underneath it shows how much noise a single run
+can hide.** Every number in this repo is one run per pairing; this is what that
+costs.
+
+The wall clock inverts too: 22:20 against 36:29, the first time the Java harness
+is faster rather than 20–47% slower. Almost all of it is `t2`, where opencode
+burned 1341 s and the Java harness hit its turn limit after 473 s. Failing
+faster is not a feature.
 
 #### What the tool set is worth, measured
 
@@ -669,12 +743,16 @@ Read the numbers with these in mind:
   later models did produce spread — but almost all of it comes from one
   all-or-nothing import in one task, which is spread from grading mechanics, not
   from difficulty.
-- **The two later models ran once, under opencode only.** Nemotron-3.5-Lightning
-  and Qwen3.6-35B-A3B were added months after the original five, on the same
-  tasks and the same 131,072-context configuration, but they have no Oh My Pi or
-  Java-harness counterpart. Given that Nemotron's entire `t2` result is a
-  compaction artifact, a second harness would very likely move its total — treat
-  63 / 86 as a number about this pairing, not about the model.
+- **Qwen3.6-35B-A3B ran once, under opencode only.** It and
+  Nemotron-3.5-Lightning were added months after the original five, on the same
+  tasks and the same 131,072-context configuration. Nemotron has since been run
+  through the Java harness as well (64 / 86 against 63 / 86 — one point apart on
+  the total, every task different underneath); Qwen3.6-35B-A3B has no second
+  harness, so treat its 68 / 86 as a number about that pairing.
+- **A one-run-per-pairing benchmark hides more movement than the totals show.**
+  The two Nemotron runs differ by a single point and disagree on all four tasks,
+  including *which* five points `t4` loses. Where this repo reports a small gap,
+  assume it is noise unless a named defect is attached to it.
 - **Four tasks, one language, one domain.** All Python, all small self-contained
   repos, all with fully specified signatures. Nothing here says anything about
   large unfamiliar codebases, other languages, or ambiguous requirements.
@@ -716,7 +794,7 @@ bench/
 results/
   measurements.json       opencode runs, machine-readable
   omp-measurements.json   Oh My Pi runs, machine-readable
-  java-measurements.json  purpose-built-harness run, machine-readable
+  java-measurements.json  purpose-built-harness runs, machine-readable
   logs/                   per-model, per-harness timeline of each run
 tools/
   model-switch            starts exactly one model, stops the others
