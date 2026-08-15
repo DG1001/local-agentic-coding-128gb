@@ -194,9 +194,9 @@ Read the numbers with these in mind:
   for a model already shown to be impractical here. An omission, not a gap in
   the data.
 
-## Alles weitere
+## Everything else
 
-Aufbau, Rohdaten und Reproduktion stehen im
-[Repository](https://github.com/DG1001/local-agentic-coding-128gb) —
-einschliesslich der Aufgaben, der verdeckten Testsuiten und der
-Skripte, mit denen jede Zahl hier entstanden ist.
+Setup, raw data and reproduction steps are in the
+[repository](https://github.com/DG1001/local-agentic-coding-128gb) — including
+the tasks, the hidden test suites, and the scripts every number here came out
+of.
