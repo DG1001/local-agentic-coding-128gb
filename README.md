@@ -41,17 +41,19 @@ tests pass.**
 | KAT-Coder-V2.5-Dev | MoE | 65 GB | 84 / 86 | 25:59 | 169 | 79 |
 | Qwen-AgentWorld-35B-A3B | MoE | 65 GB | 80 / 86 | 41:34 | 120 | 66 |
 | Qwen3.6-35B-A3B | MoE | 35 GB | 68 / 86 | 44:30 | 116 | 125 |
-| Nemotron-3.5-Lightning-30B-A3B | MoE | 21 GB | 63 / 86 | 36:29 | 220 | 54 |
+| Nemotron-3.5-Lightning-30B-A3B | MoE | 21 GB | 63–85 / 86 † | 36:29 | 220 | 54 |
+
+† **Not a typo, and the most important number in this table.** Nemotron is the
+only model here that was run more than once. Three runs on the identical tasks
+at identical limits produced 63/86, 64/86 and 85/86 — a 22-point spread that is
+**wider than the gap between first and last place in this table**, every other
+row of which is a single run. Details in [one run is not a
+measurement](#one-run-is-not-a-measurement). Read the ranking accordingly: it
+separates "solves this class of task" from "does not", and nothing finer.
 
 Three models scored perfectly. The interesting column is wall clock: the dense
 27B needed **7.3× longer than DeepSeek** for the exact same result. That gap is
 not a software problem and it is not tunable. See below.
-
-The bottom two rows are the later additions, and **each lost all 17 points of
-one and the same task** — `t2-refactor`, on an import path the task names
-verbatim. Remove that task and both sit in the same band as the rest. Whether
-that makes them better than they look depends on the model: see [three ways to
-fail the same task](#three-ways-to-fail-the-same-task).
 
 ## Hardware
 
@@ -170,8 +172,16 @@ It helps **more on code than on prose** (1.55× vs 1.29× in a separate paired
 measurement), which is the opposite of what we guessed: indentation, closing
 brackets and repeated shapes like `def test_…` are exactly what a small drafter
 predicts well. And it helps more still on agentic work, where generations are
-short: the same `t1-debug` task runs in 83 s with DSpark against 156 s without,
-a factor of 1.88.
+short: a full benchmark run takes 13:12 with DSpark against 22:20 without, and
+`t1-debug` alone 83 s against 156 s.
+
+**It buys time and only time.** The DSpark run also scored 85/86 against 64/86
+without — but speculative decoding preserves the target model's output
+distribution, so it cannot make a model more correct. Those 21 points are
+sampling variance, and finding them is what turned [one run is not a
+measurement](#one-run-is-not-a-measurement) from a caveat into the most
+important paragraph in this README. Do not read the score difference as a
+DSpark result.
 
 This costs a newer runtime. **vLLM 0.26.0 cannot load the drafter at all** —
 it does not know the `Qwen3DSparkModel` architecture and dies in the embedding
@@ -459,6 +469,65 @@ Two runs, two roads into the same unimportable package. A model that solves a
 task once and then loops on a circular import when asked again is unreliable on
 that task — not merely unlucky in one harness.
 
+#### One run is not a measurement
+
+A third run settled it, and not in the direction either earlier explanation
+predicted. Same model, same harness, same 131,072 / 32,768 limits, the only
+change being NVIDIA's DSpark draft model on the server side:
+
+| Run | Harness | Speculative decoding | t2-refactor | Total | Wall clock |
+|---|---|---|---|---|---|
+| 1 | opencode | no | 0 / 17 · 1341 s | 63 / 86 | 36:29 |
+| 2 | Java harness | no | 0 / 17 · 473 s (turn limit) | 64 / 86 | 22:20 |
+| 3 | Java harness | **DSpark** | **17 / 17** · 144 s | **85 / 86** | **13:12** |
+
+`t2-refactor` went from zero to full marks, finishing cleanly in 43 turns with
+`STANDARD` in `wandler/einheiten.py` exactly as specified.
+
+**Speculative decoding cannot explain that.** It preserves the target model's
+output distribution — it makes a model faster, not better. It accounts for the
+1.69× wall-clock gain, which matches the 1.54× measured on raw throughput. The
+21 extra points are sampling luck.
+
+So all three explanations offered for this cell were wrong in turn:
+
+1. *"Compaction destroyed it."* True as an event, false as the cause — run 2
+   never compacted and still scored zero.
+2. *"The model is unreliable on this task."* Closer, but it was stated as a
+   property of the model when it is a property of a **single sample**.
+3. *"63/86 is Nemotron's score."* There is no such number. Three runs gave
+   63, 64 and 85.
+
+**The spread is 22 points — 26% of the total, and wider than the distance from
+first to last place in the summary table.** Every other entry in that table is
+one run. Nothing in this repo can distinguish 86/86 from 80/86; the only
+defensible reading is a two-way split between models that solve this class of
+task and models that do not.
+
+That limitation was stated from the first revision and treated as boilerplate,
+including by the person writing it. It is now measured, and it is larger than
+the effects the table was being used to discuss. Re-running all seven models
+several times each would cost six to eight hours of machine time and is the
+obvious next step; until someone does it, treat every ranking here as a
+two-bucket sort.
+
+##### What this does not undermine
+
+Not everything in this repo is one sample of a noisy variable:
+
+- **The bandwidth arithmetic.** 4.4 tok/s measured against a 5.3 tok/s ceiling
+  is a hardware property, reproducible on demand, and it does not vary by run.
+- **The throughput table**, re-measured in one sitting with a stated method.
+- **Named defects.** "KAT's parser keeps the comma attached to the column name"
+  is a fact about an artifact you can open and read, not a score. The same holds
+  for the three `t2` import failures and for opencode's `git checkout -- .`.
+- **Claude Code's 9/86.** Four tasks that all died with the same compaction
+  error, one of them starting from an empty directory, is a mechanism, not a
+  draw from a distribution.
+
+The rule that separates them: **a number needs repetition, a mechanism needs
+evidence.** This repo has plenty of the second and almost none of the first.
+
 ### Test volume does not predict correctness
 
 Laguna wrote 111 tests, DeepSeek 73 — both perfect. AgentWorld wrote 66 and
@@ -665,6 +734,12 @@ Both runs at 131,072 / 32,768, so the harness is the only difference:
 | t4-feature (21) | 16 · 292 s | **17** · **263 s** |
 | **Total** | **64 / 86** · **22:20** | 63 / 86 · 36:29 |
 
+A third run followed, same harness and limits, with NVIDIA's DSpark draft model
+on the server: **85 / 86 in 13:12**, with `t2-refactor` at 17/17. That result
+belongs to [one run is not a
+measurement](#one-run-is-not-a-measurement) rather than to this comparison — it
+says more about run-to-run variance than about any harness.
+
 One point apart on the total, and **every single task different underneath.**
 The Java harness gains a point on `t1` (commercial rounding, which opencode's
 run got wrong) and one on `t3`; it loses one on `t4`. Even the `t4` losses are
@@ -829,9 +904,12 @@ count — 31,333 vs 693 — not bytes. The loader pays per tensor.
 
 Read the numbers with these in mind:
 
-- **One run per model per task.** Language models vary between runs. The
-  distance between 86 and 84 is well inside the noise; treat "these three solve
-  this class of task reliably" as the finding, not the ranking.
+- **One run per model per task — and that is now the headline limitation, not
+  a footnote.** The only model run three times spread 22 points across those
+  runs, wider than first-to-last in the summary table. See [one run is not a
+  measurement](#one-run-is-not-a-measurement). Treat "these solve this class of
+  task, those do not" as the finding; treat every ordering finer than that as
+  unsupported.
 - **The suite is too easy at the top.** Three of seven models scored perfectly.
   A benchmark where the top is crowded measures nothing at the top. The two
   later models did produce spread — but almost all of it comes from one
@@ -844,9 +922,10 @@ Read the numbers with these in mind:
   the total, every task different underneath); Qwen3.6-35B-A3B has no second
   harness, so treat its 68 / 86 as a number about that pairing.
 - **A one-run-per-pairing benchmark hides more movement than the totals show.**
-  The two Nemotron runs differ by a single point and disagree on all four tasks,
-  including *which* five points `t4` loses. Where this repo reports a small gap,
-  assume it is noise unless a named defect is attached to it.
+  The first two Nemotron runs differ by a single point and disagree on all four
+  tasks, including *which* five points `t4` loses; the third differs from both by
+  21 points. Where this repo reports a gap, assume noise unless a named defect is
+  attached to it.
 - **Four tasks, one language, one domain.** All Python, all small self-contained
   repos, all with fully specified signatures. Nothing here says anything about
   large unfamiliar codebases, other languages, or ambiguous requirements.
@@ -891,6 +970,7 @@ results/
   throughput.json         tokens/s for every model, one method, with the method
   java-measurements.json  purpose-built-harness runs, machine-readable
   logs/                   per-model, per-harness timeline of each run
+                          (including all three Nemotron runs)
 tools/
   model-switch            starts exactly one model, stops the others
   cc-local                launches Claude Code against a local model

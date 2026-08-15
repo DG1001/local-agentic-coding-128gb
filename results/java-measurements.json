@@ -176,6 +176,71 @@
         "t3-neubau": 68,
         "t4-feature": 75
       }
+    },
+    {
+      "model": "NVIDIA-Nemotron-3.5-Lightning-30B-A3B + DSpark",
+      "context_window": 131072,
+      "max_output": 32768,
+      "engine": "vLLM 0.27.1 with the DSpark draft model, num_speculative_tokens 3",
+      "note": "Same model, same harness and same limits as the run above; only speculative decoding differs. Speculative decoding preserves the target model output distribution, so it explains the 1.69x wall-clock gain and NOT the 21-point score gain. t2-refactor went 0/17 -> 17/17 between two runs that differ only in sampling luck: this model is unreliable on that task, not incapable of it.",
+      "tasks": [
+        {
+          "task": "t1-debug",
+          "seconds": 83,
+          "exit_code": 0,
+          "hidden_passed": 15,
+          "hidden_total": 15,
+          "turns": 32,
+          "tool_calls": 31,
+          "own_tests": "9 passed in 0.00s"
+        },
+        {
+          "task": "t2-refactor",
+          "seconds": 144,
+          "exit_code": 0,
+          "hidden_passed": 17,
+          "hidden_total": 17,
+          "turns": 43,
+          "tool_calls": 42,
+          "own_tests": "15 passed in 0.01s"
+        },
+        {
+          "task": "t3-neubau",
+          "seconds": 288,
+          "exit_code": 0,
+          "hidden_passed": 33,
+          "hidden_total": 33,
+          "turns": 73,
+          "tool_calls": 72,
+          "own_tests": "25 passed in 0.01s"
+        },
+        {
+          "task": "t4-feature",
+          "seconds": 277,
+          "exit_code": 0,
+          "hidden_passed": 20,
+          "hidden_total": 21,
+          "turns": 69,
+          "tool_calls": 72,
+          "own_tests": "18 passed in 0.03s"
+        }
+      ],
+      "total_hidden_passed": 85,
+      "total_hidden": 86,
+      "total_seconds": 792,
+      "tool_usage": {
+        "bash": 120,
+        "read": 28,
+        "edit": 39,
+        "glob": 3,
+        "write": 27
+      },
+      "turns_per_task": {
+        "t1-debug": 32,
+        "t2-refactor": 43,
+        "t3-neubau": 73,
+        "t4-feature": 69
+      }
     }
   ],
   "earlier_revision_read_bash_only": {
@@ -189,5 +254,6 @@
       "hidden_total": 15,
       "seconds": 319
     }
-  }
+  },
+  "variance_note": "Nemotron-3.5-Lightning was run three times on the identical four tasks at 131,072 context: 63/86 (opencode), 64/86 (Java harness), 85/86 (Java harness + DSpark). The 22-point spread is larger than the gap between first and last place in the published seven-model table, every entry of which is a single run."
 }
