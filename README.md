@@ -58,7 +58,8 @@ fail the same task](#three-ways-to-fail-the-same-task).
 - ASUS Ascent GX10 — NVIDIA GB10, 128 GB unified LPDDR5X (121 GiB usable),
   arm64, Ubuntu 24.04.4
 - ~273 GB/s memory bandwidth (vendor spec, not measured here)
-- vLLM 0.26.0 in Docker for six models; `ds4-server` (llama.cpp-derived,
+- vLLM 0.26.0 in Docker for six models, 0.27.1 for the DSpark measurement;
+  `ds4-server` (llama.cpp-derived,
   from [DeepSeek-v4-Flash-One-DGX-Spark](https://github.com/MiaAI-Lab/DeepSeek-v4-Flash-One-DGX-Spark))
   for DeepSeek
 - opencode 1.18.14, Claude Code 2.1.226 and Oh My Pi 17.2.12 as agent harnesses,
@@ -79,10 +80,10 @@ token. Qwen3.6-27B is 51.1 GiB of weights in BF16, so:
 
 ```
 273 GB/s ÷ 51.1 GiB ≈ 5.3 tokens/s   theoretical ceiling
-                       4.5 tokens/s   measured
+                       4.4 tokens/s   measured
 ```
 
-vLLM is extracting about 85% of what the hardware physically allows. That
+vLLM is extracting about 84% of what the hardware physically allows. That
 number matters more than the 4.5 itself: **there is no software fix here.**
 If the runtime were the problem you would see a gap of several ×, not 15%.
 
@@ -92,7 +93,7 @@ Two more observations point the same way:
   compute units were busy waiting on memory, not computing. Compute-bound work
   at that utilization would pull many times the power.
 - Laguna activates only 8.5B of its 117B parameters per token. Same machine,
-  same vLLM build, **18–24 tokens/s** — four times faster than the dense model
+  same vLLM build, **18.6 tokens/s** — four times faster than the dense model
   while being nearly twice as large on disk.
 
 **On this class of hardware, pick models by *active* parameters, not by file
@@ -100,27 +101,118 @@ size.** A 93 GB MoE beats a 52 GB dense model by 4× on throughput.
 
 ### Raw generation speed
 
-| Model | Active params/token | Precision | tokens/s |
-|---|---|---|---|
-| Nemotron-3.5-Lightning-30B-A3B | 3B | NVFP4 | **56.3** |
-| Qwen3.6-35B-A3B | 3B | FP8 | 50.5 |
-| KAT-Coder-V2.5 | ~3B | BF16 | 30.4 |
-| Qwen-AgentWorld-35B | 3B | BF16 | 22.9 |
-| Laguna-S-2.1 | 8.5B | NVFP4 | 18–24 |
-| Qwen3.6-27B | 27B (all) | BF16 | 4.5 |
+Everything below was re-measured in one sitting, one method for all models,
+after the original per-model figures turned out to have been collected
+inconsistently — see [the correction](#correction-the-old-speed-column-mixed-two-measurements).
 
-The top four rows all activate ~3B parameters per token and differ only in how
-many bytes each of those parameters costs to fetch. **The spread from 22.9 to
-56.3 tok/s is quantization alone** — same architecture class, same machine, same
-vLLM build. On a bandwidth-bound machine the precision of the weights is a
-throughput knob of the same order as the model choice itself, and the two new
-models are the fastest here because they are the only 3B-active models that
-ship at 4 and 8 bits rather than 16.
+| Model | Active params/token | Precision | Generation | End-to-end |
+|---|---|---|---|---|
+| Nemotron-3.5-Lightning + **DSpark** | 3B | NVFP4 | **121.4** | **91.1** |
+| Nemotron-3.5-Lightning-30B-A3B | 3B | NVFP4 | 78.7 | 61.0 |
+| Qwen3.6-35B-A3B | 3B | FP8 | 50.0 | 40.2 |
+| Qwen-AgentWorld-35B | 3B | BF16 | 30.9 | 26.2 |
+| KAT-Coder-V2.5 | ~3B | BF16 | 30.8 | 25.9 |
+| DeepSeek-V4-Flash | 8.5B | GGUF Q4-class | 29.0 | 16.5 |
+| Laguna-S-2.1 | 8.5B | NVFP4 | 18.6 | 19.5 |
+| Qwen3.6-27B | 27B (all) | BF16 | 4.4 | 4.1 |
+
+**Generation** is a one-sentence prompt, 800 output tokens, temperature 0, mean
+of two runs. **End-to-end** is ~16,850 input tokens and 800 output tokens,
+timed wall-to-wall so prefill counts — the number that matters for an agent
+carrying a conversation. Two short requests are discarded after every server
+start; without that warm-up the first measurement pays CUDA graph capture and
+JIT (Nemotron reads 62.8 instead of 78.7). Raw data:
+[`results/throughput.json`](results/throughput.json).
+
+Three things fall out of it.
+
+**Quantization is a throughput knob.** Rows 2–5 all activate ~3B parameters and
+differ only in bytes per weight: NVFP4 78.7, FP8 50.0, BF16 30.8. Same
+architecture class, same machine, same vLLM build. On a bandwidth-bound box the
+precision of the weights moves throughput as much as the model choice does.
+
+**KAT and AgentWorld are the same speed** — 30.8 and 30.9. Both are 65 GB BF16
+MoEs with ~3B active on the same hardware, so the bandwidth argument in this
+README *requires* them to be. The old table had them at 30.4 and 22.9, a third
+apart, contradicting the repo's own thesis. Nobody noticed, this author
+included.
+
+**DeepSeek falls furthest under context.** 29.0 generating, 16.5 end-to-end — a
+1.76× drop, against 1.29× for Nemotron, 1.19× for KAT and 1.07× for the dense
+27B. Pushing 88 GB of weights through prefill on the llama.cpp-derived server is
+expensive, and an agent re-sends its whole transcript every turn. Yet DeepSeek
+won the benchmark on wall clock (25:49 for 86/86). Both are true because it
+needs far fewer tokens to get there — which is the whole argument of [the
+agentic multiplier](#the-agentic-multiplier) seen from the other side.
+
+One caveat on the column itself: tokens are counted by each model's own
+tokenizer. The identical filler text is 16,849 tokens for the Qwen family and
+20,483 for Laguna, so tokens/s understates a model with a coarser tokenizer
+doing the same work.
+
+#### Speculative decoding is worth more than a bigger model
+
+NVIDIA ships Nemotron with **DSpark**, a semi-autoregressive drafter that
+proposes a block of candidate tokens per forward pass, and recommends it
+specifically for DGX Spark. It is the single largest speed lever measured here:
+
+| | Generation | End-to-end |
+|---|---|---|
+| Nemotron alone | 78.7 | 61.0 |
+| Nemotron + DSpark | **121.4** | **91.1** |
+| | 1.54× | 1.49× |
+
+vLLM's own counters corroborate it — mean acceptance length 2.98 out of a
+maximum 4, per-position acceptance 0.845 / 0.648 / 0.488, and an overall draft
+acceptance rate climbing to 66%.
+
+It helps **more on code than on prose** (1.55× vs 1.29× in a separate paired
+measurement), which is the opposite of what we guessed: indentation, closing
+brackets and repeated shapes like `def test_…` are exactly what a small drafter
+predicts well. And it helps more still on agentic work, where generations are
+short: the same `t1-debug` task runs in 83 s with DSpark against 156 s without,
+a factor of 1.88.
+
+This costs a newer runtime. **vLLM 0.26.0 cannot load the drafter at all** —
+it does not know the `Qwen3DSparkModel` architecture and dies in the embedding
+loader with `The size of tensor a (512) must match the size of tensor b (256)`.
+The model card names `vllm/vllm-openai:v0.27.1`, and on that image it works
+first try. The version by itself buys nothing (78.2 vs 78.7 tok/s without the
+drafter); it is purely the price of admission.
+
+#### Correction: the old speed column mixed two measurements
+
+Earlier revisions of this README carried a single "tokens/s" column with per-model
+figures collected at different times by different means. Re-measuring all of them
+in one sitting showed the column was not comparable:
+
+| Model | Published | Generation | End-to-end |
+|---|---|---|---|
+| Nemotron-3.5-Lightning | 56.3 | 78.7 | 61.0 |
+| Qwen3.6-35B-A3B | 50.5 | 50.0 | 40.2 |
+| KAT-Coder-V2.5 | 30.4 | 30.8 | 25.9 |
+| Qwen-AgentWorld-35B | 22.9 | 30.9 | 26.2 |
+| Qwen3.6-27B | 4.5 | 4.4 | 4.1 |
+
+Nemotron's 56.3 was an end-to-end figure with a ~20,000-token context —
+re-measuring that configuration reproduces it at 56.5. Qwen3.6-35B-A3B's 50.5
+was a generation figure. **Both were correct and neither was wrong; they were
+printed in the same column one row apart**, which made the faster model look
+slower. AgentWorld's 22.9 does not reproduce under either method.
+
+Nothing about the benchmark results changes — those were always wall-clock
+measurements of complete runs. What changes is the speed table, which now states
+its method and reports both numbers.
+
+The lesson is not about tokens per second. **A number is only comparable to
+another number if you can say how both were produced**, and "we measured it at
+the time" is not an answer. Every figure in this repo that survives is one where
+the method is written down next to it.
 
 ### The agentic multiplier
 
 Raw throughput understates the difference in practice. Between Qwen3.6-27B and
-KAT the token rate differs by 7× (4.5 vs 30.4 tok/s). On an actual task the
+KAT the token rate differs by 7× (4.4 vs 30.8 tok/s). On an actual task the
 wall clock differed by **20×** (1788 s vs 90 s for the same bug hunt).
 
 The extra factor is model behaviour, not hardware: the slower model also needed
@@ -719,13 +811,15 @@ inside `max_num_batched_tokens`, whose default is 2048. The server aborts at
 startup on an assertion, not a readable error. Pass
 `--max-num-batched-tokens 8192`.
 
-**vLLM 0.26.0 cannot load Nemotron's DSpark draft model.** NVIDIA recommends
-speculative decoding with the paired DSpark checkpoint for single-Spark use, but
-the embedding loader fails with `RuntimeError: The size of tensor a (512) must
-match the size of tensor b (256)`. The main model loads cleanly. All Nemotron
-numbers here are therefore *without* speculative decoding — 56.3 tok/s is the
-floor, not the ceiling, for this model on this hardware.
-[`tools/model-switch`](tools/model-switch) keeps the flag behind `SPEC=1`.
+**Read the model card for the runtime version before blaming your config.**
+Nemotron's DSpark draft model would not load under vLLM 0.26.0 — the embedding
+loader dies with `RuntimeError: The size of tensor a (512) must match the size
+of tensor b (256)` — and that looked like a broken checkpoint or a bad flag for
+a while. It was neither: 0.26.0 does not know the `Qwen3DSparkModel`
+architecture. The card names `vllm/vllm-openai:v0.27.1` in one line, and on that
+image it works first try and is worth
+[1.5× throughput](#speculative-decoding-is-worth-more-than-a-bigger-model).
+`tools/model-switch nemotronspec` starts it.
 
 **Load times differ wildly at equal size.** KAT and AgentWorld are both 65 GB.
 AgentWorld loads in ~230 s, KAT in **655 s**. The difference tracks tensor
@@ -794,6 +888,7 @@ bench/
 results/
   measurements.json       opencode runs, machine-readable
   omp-measurements.json   Oh My Pi runs, machine-readable
+  throughput.json         tokens/s for every model, one method, with the method
   java-measurements.json  purpose-built-harness runs, machine-readable
   logs/                   per-model, per-harness timeline of each run
 tools/
@@ -807,7 +902,8 @@ configs/
 Reproducing a run:
 
 ```bash
-./tools/model-switch kat   # ds4 | laguna | agentworld | qwen27b | nemotron | qwen36moe
+./tools/model-switch kat   # ds4 | laguna | agentworld | qwen27b | nemotron |
+                           # qwen36moe | nemotronspec (Nemotron + DSpark, vLLM 0.27.1)
 ./bench/run.sh kat kat/kat-coder-v2.5       # <label> <opencode provider/model>
 ```
 

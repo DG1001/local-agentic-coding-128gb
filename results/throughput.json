@@ -1,0 +1,75 @@
+{
+  "method": {
+    "generation": "short prompt (one sentence), 800 output tokens, temperature 0, mean of 2 runs",
+    "end_to_end": "~16,850 input tokens, 800 output tokens, 1 run; tokens/s = completion_tokens / total wall time, so prefill is included",
+    "warmup": "two short requests discarded after each server start — without them the first measurement pays CUDA graph capture and JIT (Nemotron read 62.8 instead of 78.7)",
+    "prefix_cache": "the long prompt carries a fixed-width per-model prefix so a previous model cannot produce a cache hit; the body is character-identical for every model",
+    "caveat": "tokens are counted by each model own tokenizer. The same filler text is 16,849 tokens for the Qwen family and 20,483 for Laguna, so cross-family tokens/s comparisons understate the coarser tokenizer."
+  },
+  "models": {
+    "nemotron": {
+      "name": "NVIDIA-Nemotron-3.5-Lightning-30B-A3B",
+      "engine": "vllm/vllm-openai:latest",
+      "speculative_decoding": false,
+      "generation_tok_s": 78.7,
+      "end_to_end_tok_s": 61.0,
+      "end_to_end_input_tokens": 16849
+    },
+    "nemotronspec": {
+      "name": "NVIDIA-Nemotron-3.5-Lightning-30B-A3B + DSpark",
+      "engine": "vllm/vllm-openai:v0.27.1",
+      "speculative_decoding": true,
+      "generation_tok_s": 121.4,
+      "end_to_end_tok_s": 91.1,
+      "end_to_end_input_tokens": 16851
+    },
+    "qwen36moe": {
+      "name": "Qwen3.6-35B-A3B",
+      "engine": "vllm/vllm-openai:latest",
+      "speculative_decoding": false,
+      "generation_tok_s": 50.0,
+      "end_to_end_tok_s": 40.2,
+      "end_to_end_input_tokens": 16849
+    },
+    "agentworld": {
+      "name": "Qwen-AgentWorld-35B-A3B",
+      "engine": "vllm/vllm-openai:latest",
+      "speculative_decoding": false,
+      "generation_tok_s": 30.9,
+      "end_to_end_tok_s": 26.2,
+      "end_to_end_input_tokens": 16845
+    },
+    "kat": {
+      "name": "KAT-Coder-V2.5-Dev",
+      "engine": "vllm/vllm-openai:latest",
+      "speculative_decoding": false,
+      "generation_tok_s": 30.8,
+      "end_to_end_tok_s": 25.9,
+      "end_to_end_input_tokens": 16844
+    },
+    "laguna": {
+      "name": "Laguna-S-2.1",
+      "engine": "vllm/vllm-openai:latest",
+      "speculative_decoding": true,
+      "generation_tok_s": 18.6,
+      "end_to_end_tok_s": 19.5,
+      "end_to_end_input_tokens": 20483
+    },
+    "qwen27b": {
+      "name": "Qwen3.6-27B",
+      "engine": "vllm/vllm-openai:latest",
+      "speculative_decoding": false,
+      "generation_tok_s": 4.4,
+      "end_to_end_tok_s": 4.1,
+      "end_to_end_input_tokens": 16848
+    },
+    "ds4": {
+      "name": "DeepSeek-V4-Flash",
+      "engine": "llama.cpp-derived ds4-server",
+      "speculative_decoding": false,
+      "generation_tok_s": 29.0,
+      "end_to_end_tok_s": 16.5,
+      "end_to_end_input_tokens": 16838
+    }
+  }
+}

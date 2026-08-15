@@ -33,7 +33,9 @@ load_spec() {
     # Je Modell uebersteuerbar. Nemotrons Entwurfsmodell braucht ein neueres
     # vLLM als der Rest der Tabelle; alle anderen bleiben auf dem Abbild, mit
     # dem die veroeffentlichten Zahlen gemessen wurden.
-    ABBILD="$IMAGE"
+    # ABBILD_UEBER erlaubt denselben Modelleintrag auf einem anderen vLLM --
+    # gebraucht fuer den Gegentest "gleiche Version, nur ohne DSpark".
+    ABBILD="${ABBILD_UEBER:-$IMAGE}"
     case "$1" in
         nemotronspec)
             # Das Rezept aus der Modellkarte, woertlich -- inklusive der
