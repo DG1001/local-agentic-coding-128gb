@@ -11,39 +11,49 @@
         "exit_code": 0,
         "hidden_passed": 15,
         "hidden_total": 15,
-        "tool_calls": 3,
-        "own_tests_passing": 9
+        "own_tests_passing": 9,
+        "read_search_calls": 3,
+        "all_tool_calls": 11,
+        "pytest_runs": 1
       },
       "t2-refactor": {
         "seconds": 213,
         "exit_code": 0,
         "hidden_passed": 17,
         "hidden_total": 17,
-        "tool_calls": 0,
-        "own_tests_passing": 17
+        "own_tests_passing": 17,
+        "read_search_calls": 0,
+        "all_tool_calls": 9,
+        "pytest_runs": 1
       },
       "t3-neubau": {
         "seconds": 564,
         "exit_code": 0,
         "hidden_passed": 33,
         "hidden_total": 33,
-        "tool_calls": 0,
-        "own_tests_passing": 27
+        "own_tests_passing": 27,
+        "read_search_calls": 0,
+        "all_tool_calls": 14,
+        "pytest_runs": 2
       },
       "t4-feature": {
         "seconds": 489,
         "exit_code": 0,
         "hidden_passed": 21,
         "hidden_total": 21,
-        "tool_calls": 8,
-        "own_tests_passing": 20
+        "own_tests_passing": 20,
+        "read_search_calls": 8,
+        "all_tool_calls": 23,
+        "pytest_runs": 1
       }
     },
     "total_seconds": 1549,
     "total_hidden_passed": 86,
     "total_hidden": 86,
-    "total_tool_calls": 11,
-    "total_own_tests": 73
+    "total_own_tests": 73,
+    "total_read_search_calls": 11,
+    "total_tool_calls": 57,
+    "total_pytest_runs": 5
   },
   "laguna": {
     "name": "Laguna-S-2.1",
@@ -57,39 +67,49 @@
         "exit_code": 0,
         "hidden_passed": 15,
         "hidden_total": 15,
-        "tool_calls": 6,
-        "own_tests_passing": 10
+        "own_tests_passing": 10,
+        "read_search_calls": 6,
+        "all_tool_calls": 14,
+        "pytest_runs": 1
       },
       "t2-refactor": {
         "seconds": 266,
         "exit_code": 0,
         "hidden_passed": 17,
         "hidden_total": 17,
-        "tool_calls": 6,
-        "own_tests_passing": 19
+        "own_tests_passing": 19,
+        "read_search_calls": 6,
+        "all_tool_calls": 17,
+        "pytest_runs": 1
       },
       "t3-neubau": {
         "seconds": 973,
         "exit_code": 0,
         "hidden_passed": 33,
         "hidden_total": 33,
-        "tool_calls": 4,
-        "own_tests_passing": 50
+        "own_tests_passing": 50,
+        "read_search_calls": 4,
+        "all_tool_calls": 27,
+        "pytest_runs": 3
       },
       "t4-feature": {
         "seconds": 465,
         "exit_code": 0,
         "hidden_passed": 21,
         "hidden_total": 21,
-        "tool_calls": 7,
-        "own_tests_passing": 32
+        "own_tests_passing": 32,
+        "read_search_calls": 7,
+        "all_tool_calls": 18,
+        "pytest_runs": 1
       }
     },
     "total_seconds": 1856,
     "total_hidden_passed": 86,
     "total_hidden": 86,
-    "total_tool_calls": 23,
-    "total_own_tests": 111
+    "total_own_tests": 111,
+    "total_read_search_calls": 23,
+    "total_tool_calls": 76,
+    "total_pytest_runs": 6
   },
   "kat": {
     "name": "KAT-Coder-V2.5-Dev",
@@ -103,39 +123,49 @@
         "exit_code": 0,
         "hidden_passed": 15,
         "hidden_total": 15,
-        "tool_calls": 4,
-        "own_tests_passing": 9
+        "own_tests_passing": 9,
+        "read_search_calls": 4,
+        "all_tool_calls": 14,
+        "pytest_runs": 3
       },
       "t2-refactor": {
         "seconds": 168,
         "exit_code": 0,
         "hidden_passed": 17,
         "hidden_total": 17,
-        "tool_calls": 7,
-        "own_tests_passing": 14
+        "own_tests_passing": 14,
+        "read_search_calls": 7,
+        "all_tool_calls": 14,
+        "pytest_runs": 1
       },
       "t3-neubau": {
         "seconds": 954,
         "exit_code": 0,
         "hidden_passed": 31,
         "hidden_total": 33,
-        "tool_calls": 6,
-        "own_tests_passing": 27
+        "own_tests_passing": 27,
+        "read_search_calls": 6,
+        "all_tool_calls": 117,
+        "pytest_runs": 12
       },
       "t4-feature": {
         "seconds": 347,
         "exit_code": 0,
         "hidden_passed": 21,
         "hidden_total": 21,
-        "tool_calls": 6,
-        "own_tests_passing": 29
+        "own_tests_passing": 29,
+        "read_search_calls": 6,
+        "all_tool_calls": 24,
+        "pytest_runs": 5
       }
     },
     "total_seconds": 1559,
     "total_hidden_passed": 84,
     "total_hidden": 86,
-    "total_tool_calls": 23,
-    "total_own_tests": 79
+    "total_own_tests": 79,
+    "total_read_search_calls": 23,
+    "total_tool_calls": 169,
+    "total_pytest_runs": 21
   },
   "agentworld": {
     "name": "Qwen-AgentWorld-35B-A3B",
@@ -149,39 +179,49 @@
         "exit_code": 0,
         "hidden_passed": 15,
         "hidden_total": 15,
-        "tool_calls": 5,
-        "own_tests_passing": 9
+        "own_tests_passing": 9,
+        "read_search_calls": 5,
+        "all_tool_calls": 21,
+        "pytest_runs": 5
       },
       "t2-refactor": {
         "seconds": 349,
         "exit_code": 0,
         "hidden_passed": 14,
         "hidden_total": 17,
-        "tool_calls": 6,
-        "own_tests_passing": 12
+        "own_tests_passing": 12,
+        "read_search_calls": 6,
+        "all_tool_calls": 23,
+        "pytest_runs": 2
       },
       "t3-neubau": {
         "seconds": 967,
         "exit_code": 0,
         "hidden_passed": 30,
         "hidden_total": 33,
-        "tool_calls": 1,
-        "own_tests_passing": 24
+        "own_tests_passing": 24,
+        "read_search_calls": 1,
+        "all_tool_calls": 23,
+        "pytest_runs": 4
       },
       "t4-feature": {
         "seconds": 942,
         "exit_code": 0,
         "hidden_passed": 21,
         "hidden_total": 21,
-        "tool_calls": 9,
-        "own_tests_passing": 21
+        "own_tests_passing": 21,
+        "read_search_calls": 9,
+        "all_tool_calls": 53,
+        "pytest_runs": 4
       }
     },
     "total_seconds": 2494,
     "total_hidden_passed": 80,
     "total_hidden": 86,
-    "total_tool_calls": 21,
-    "total_own_tests": 66
+    "total_own_tests": 66,
+    "total_read_search_calls": 21,
+    "total_tool_calls": 120,
+    "total_pytest_runs": 15
   },
   "qwen27b": {
     "name": "Qwen3.6-27B",
@@ -195,38 +235,165 @@
         "exit_code": 0,
         "hidden_passed": 15,
         "hidden_total": 15,
-        "tool_calls": 3,
-        "own_tests_passing": 9
+        "own_tests_passing": 9,
+        "read_search_calls": 3,
+        "all_tool_calls": 13,
+        "pytest_runs": 2
       },
       "t2-refactor": {
         "seconds": 3169,
         "exit_code": 0,
         "hidden_passed": 17,
         "hidden_total": 17,
-        "tool_calls": 6,
-        "own_tests_passing": 28
+        "own_tests_passing": 28,
+        "read_search_calls": 6,
+        "all_tool_calls": 15,
+        "pytest_runs": 2
       },
       "t3-neubau": {
         "seconds": 2762,
         "exit_code": 0,
         "hidden_passed": 33,
         "hidden_total": 33,
-        "tool_calls": 2,
-        "own_tests_passing": 52
+        "own_tests_passing": 52,
+        "read_search_calls": 2,
+        "all_tool_calls": 18,
+        "pytest_runs": 2
       },
       "t4-feature": {
         "seconds": 3537,
         "exit_code": 0,
         "hidden_passed": 21,
         "hidden_total": 21,
-        "tool_calls": 7,
-        "own_tests_passing": 29
+        "own_tests_passing": 29,
+        "read_search_calls": 7,
+        "all_tool_calls": 21,
+        "pytest_runs": 2
       }
     },
     "total_seconds": 11256,
     "total_hidden_passed": 86,
     "total_hidden": 86,
-    "total_tool_calls": 18,
-    "total_own_tests": 118
+    "total_own_tests": 118,
+    "total_read_search_calls": 18,
+    "total_tool_calls": 67,
+    "total_pytest_runs": 8
+  },
+  "nemotron": {
+    "name": "NVIDIA-Nemotron-3.5-Lightning-30B-A3B",
+    "architecture": "MoE (Mamba hybrid), 30B total / 3B active",
+    "precision": "NVFP4",
+    "weights_gb_on_disk": 21,
+    "engine": "vLLM 0.26.0",
+    "tokens_per_second": 56.3,
+    "note": "Added after the original five. One run, opencode only, 131,072 context.",
+    "tasks": {
+      "t1-debug": {
+        "seconds": 269,
+        "exit_code": 0,
+        "hidden_passed": 14,
+        "hidden_total": 15,
+        "read_search_calls": 5,
+        "all_tool_calls": 40,
+        "pytest_runs": 8,
+        "own_tests_passing": 10
+      },
+      "t2-refactor": {
+        "seconds": 1341,
+        "exit_code": 1,
+        "hidden_passed": 0,
+        "hidden_total": 17,
+        "read_search_calls": 13,
+        "all_tool_calls": 92,
+        "pytest_runs": 21,
+        "own_tests_passing": 0,
+        "own_tests_note": "collection error — package not importable"
+      },
+      "t3-neubau": {
+        "seconds": 316,
+        "exit_code": 0,
+        "hidden_passed": 32,
+        "hidden_total": 33,
+        "read_search_calls": 7,
+        "all_tool_calls": 46,
+        "pytest_runs": 7,
+        "own_tests_passing": 23
+      },
+      "t4-feature": {
+        "seconds": 263,
+        "exit_code": 0,
+        "hidden_passed": 17,
+        "hidden_total": 21,
+        "read_search_calls": 11,
+        "all_tool_calls": 42,
+        "pytest_runs": 8,
+        "own_tests_passing": 21
+      }
+    },
+    "total_seconds": 2189,
+    "total_hidden_passed": 63,
+    "total_hidden": 86,
+    "total_read_search_calls": 36,
+    "total_tool_calls": 220,
+    "total_pytest_runs": 44,
+    "total_own_tests": 54
+  },
+  "qwen36moe": {
+    "name": "Qwen3.6-35B-A3B",
+    "architecture": "MoE, 35B total / 3B active",
+    "precision": "FP8",
+    "weights_gb_on_disk": 35,
+    "engine": "vLLM 0.26.0",
+    "tokens_per_second": 50.5,
+    "note": "Added after the original five. One run, opencode only, 131,072 context.",
+    "tasks": {
+      "t1-debug": {
+        "seconds": 217,
+        "exit_code": 0,
+        "hidden_passed": 15,
+        "hidden_total": 15,
+        "read_search_calls": 7,
+        "all_tool_calls": 21,
+        "pytest_runs": 1,
+        "own_tests_passing": 9
+      },
+      "t2-refactor": {
+        "seconds": 473,
+        "exit_code": 0,
+        "hidden_passed": 0,
+        "hidden_total": 17,
+        "read_search_calls": 3,
+        "all_tool_calls": 18,
+        "pytest_runs": 3,
+        "own_tests_passing": 21
+      },
+      "t3-neubau": {
+        "seconds": 1542,
+        "exit_code": 1,
+        "hidden_passed": 32,
+        "hidden_total": 33,
+        "read_search_calls": 6,
+        "all_tool_calls": 56,
+        "pytest_runs": 10,
+        "own_tests_passing": 70
+      },
+      "t4-feature": {
+        "seconds": 438,
+        "exit_code": 0,
+        "hidden_passed": 21,
+        "hidden_total": 21,
+        "read_search_calls": 2,
+        "all_tool_calls": 21,
+        "pytest_runs": 4,
+        "own_tests_passing": 25
+      }
+    },
+    "total_seconds": 2670,
+    "total_hidden_passed": 68,
+    "total_hidden": 86,
+    "total_read_search_calls": 18,
+    "total_tool_calls": 116,
+    "total_pytest_runs": 18,
+    "total_own_tests": 125
   }
 }

@@ -1,6 +1,6 @@
 # Local agentic coding on 128 GB unified memory (DGX Spark class)
 
-Five large local LLMs, four realistic coding tasks, 86 hidden tests each, one
+Seven large local LLMs, four realistic coding tasks, 86 hidden tests each, one
 ASUS Ascent GX10 — **NVIDIA GB10, 128 GB unified memory**, the same chip and
 memory configuration as the NVIDIA DGX Spark. Everything ran locally through
 [opencode](https://opencode.ai), [Claude Code](https://claude.com/claude-code)
@@ -10,7 +10,8 @@ was added later to test one specific claim; see
 [below](#testing-that-theory-a-fourth-harness-written-to-check-one-claim).
 
 Models: DeepSeek-V4-Flash, Laguna-S-2.1 (poolside), KAT-Coder-V2.5,
-Qwen-AgentWorld-35B-A3B, Qwen3.6-27B. Served with vLLM and a
+Qwen-AgentWorld-35B-A3B, Qwen3.6-27B, and — added later — NVIDIA
+Nemotron-3.5-Lightning-30B-A3B and Qwen3.6-35B-A3B. Served with vLLM and a
 llama.cpp-derived server.
 
 This is the big-memory counterpart to
@@ -20,8 +21,9 @@ almost disjoint. On 24 GB the limiting factor was tooling — inference engines
 breaking chat templates, KV cache blowing past the budget, system prompt size
 pushing models off a cliff. On 128 GB almost none of that mattered: with
 131,072-token context windows and millions of tokens of KV cache to spare, no
-model here ran out of room, and four of the five got at least 84 of 86 tests
-right.
+model here ran out of room, and four of the first five got at least 84 of 86
+tests right. The two models added later scored markedly lower — and for reasons
+worth reading, because neither is about capability.
 
 What limits you here is **memory bandwidth**, and it decides which models are
 worth running at all. And — the finding that surprised us most — **which agent
@@ -32,22 +34,29 @@ tests pass.**
 
 | Model | Type | Weights | Hidden tests | Wall clock | Tool calls | Own tests written |
 |---|---|---|---|---|---|---|
-| **DeepSeek-V4-Flash** | MoE | 88 GB | **86 / 86** | **25:49** | 11 | 73 |
-| **Laguna-S-2.1** | MoE | 93 GB | **86 / 86** | 30:56 | 23 | 111 |
-| **Qwen3.6-27B** | dense | 52 GB | **86 / 86** | **3:07:36** | 18 | 118 |
-| KAT-Coder-V2.5-Dev | MoE | 65 GB | 84 / 86 | 25:59 | 23 | 79 |
-| Qwen-AgentWorld-35B-A3B | MoE | 65 GB | 80 / 86 | 41:34 | 21 | 66 |
+| **DeepSeek-V4-Flash** | MoE | 88 GB | **86 / 86** | **25:49** | 57 | 73 |
+| **Laguna-S-2.1** | MoE | 93 GB | **86 / 86** | 30:56 | 76 | 111 |
+| **Qwen3.6-27B** | dense | 52 GB | **86 / 86** | **3:07:36** | 67 | 118 |
+| KAT-Coder-V2.5-Dev | MoE | 65 GB | 84 / 86 | 25:59 | 169 | 79 |
+| Qwen-AgentWorld-35B-A3B | MoE | 65 GB | 80 / 86 | 41:34 | 120 | 66 |
+| Qwen3.6-35B-A3B | MoE | 35 GB | 68 / 86 | 44:30 | 116 | 125 |
+| Nemotron-3.5-Lightning-30B-A3B | MoE | 21 GB | 63 / 86 | 36:29 | 220 | 54 |
 
 Three models scored perfectly. The interesting column is wall clock: the dense
 27B needed **7.3× longer than DeepSeek** for the exact same result. That gap is
 not a software problem and it is not tunable. See below.
+
+The bottom two rows are the later additions and they read worse than they are:
+**each lost all 17 points of one task, and neither loss was a failure to solve
+it.** Details in [three ways to fail the same
+task](#three-ways-to-fail-the-same-task).
 
 ## Hardware
 
 - ASUS Ascent GX10 — NVIDIA GB10, 128 GB unified LPDDR5X (121 GiB usable),
   arm64, Ubuntu 24.04.4
 - ~273 GB/s memory bandwidth (vendor spec, not measured here)
-- vLLM 0.26.0 in Docker for four models; `ds4-server` (llama.cpp-derived,
+- vLLM 0.26.0 in Docker for six models; `ds4-server` (llama.cpp-derived,
   from [DeepSeek-v4-Flash-One-DGX-Spark](https://github.com/MiaAI-Lab/DeepSeek-v4-Flash-One-DGX-Spark))
   for DeepSeek
 - opencode 1.18.14, Claude Code 2.1.226 and Oh My Pi 17.2.12 as agent harnesses,
@@ -89,12 +98,22 @@ size.** A 93 GB MoE beats a 52 GB dense model by 4× on throughput.
 
 ### Raw generation speed
 
-| Model | Active params/token | tokens/s |
-|---|---|---|
-| KAT-Coder-V2.5 | ~3B | 30.4 |
-| Qwen-AgentWorld-35B | 3B | 22.9 |
-| Laguna-S-2.1 | 8.5B | 18–24 |
-| Qwen3.6-27B | 27B (all) | 4.5 |
+| Model | Active params/token | Precision | tokens/s |
+|---|---|---|---|
+| Nemotron-3.5-Lightning-30B-A3B | 3B | NVFP4 | **56.3** |
+| Qwen3.6-35B-A3B | 3B | FP8 | 50.5 |
+| KAT-Coder-V2.5 | ~3B | BF16 | 30.4 |
+| Qwen-AgentWorld-35B | 3B | BF16 | 22.9 |
+| Laguna-S-2.1 | 8.5B | NVFP4 | 18–24 |
+| Qwen3.6-27B | 27B (all) | BF16 | 4.5 |
+
+The top four rows all activate ~3B parameters per token and differ only in how
+many bytes each of those parameters costs to fetch. **The spread from 22.9 to
+56.3 tok/s is quantization alone** — same architecture class, same machine, same
+vLLM build. On a bandwidth-bound machine the precision of the weights is a
+throughput knob of the same order as the model choice itself, and the two new
+models are the fastest here because they are the only 3B-active models that
+ship at 4 and 8 bits rather than 16.
 
 ### The agentic multiplier
 
@@ -149,8 +168,8 @@ Design rules that turned out to matter:
 - **The seed repos' own tests pass but are inadequate.** In `t1` all four bugs
   survive the existing suite. A model that trusts green tests fails.
 - **Integrity check.** After each run we verify no `conftest.py`, `pytest.ini`
-  or `sitecustomize.py` appeared that could bend the grading. All five runs
-  were clean.
+  or `sitecustomize.py` appeared that could bend the grading. All runs were
+  clean.
 
 ### Why the tasks are in German
 
@@ -176,15 +195,38 @@ language-agnostic — swap in your own `task.md` + `test_bench.py`.
 | t4-feature (21) | 21 · 489 s | 21 · 465 s | 21 · 3537 s | 21 · **347 s** | 21 · 942 s |
 | **Total** | **86 / 86** | **86 / 86** | **86 / 86** | 84 / 86 | 80 / 86 |
 
+The two later additions, run identically (opencode, 131,072 context, one run
+each) but months apart, so they are kept in their own table rather than folded
+into the one above:
+
+| Task | Qwen3.6-35B-A3B | Nemotron-3.5-Lightning |
+|---|---|---|
+| t1-debug (15) | 15 · 217 s | **14** · 269 s |
+| t2-refactor (17) | **0** · 473 s | **0** · 1341 s |
+| t3-neubau (33) | **32** · 1542 s | **32** · **316 s** |
+| t4-feature (21) | 21 · 438 s | **17** · 263 s |
+| **Total** | 68 / 86 · 44:30 | 63 / 86 · 36:29 |
+
+Nemotron's `t3-neubau` is the fastest greenfield run of any model here — 316 s
+against DeepSeek's 564 s and Qwen3.6-27B's 2762 s, for 32 of 33 points. Where
+it is not fighting itself it is very fast.
+
 Raw data: [`results/measurements.json`](results/measurements.json),
 per-model timelines under [`results/logs/`](results/logs/).
 
 ### The tasks that separated nothing
 
-`t1-debug` and `t4-feature` were solved completely by **all five** models. As
-discriminators they are worthless — every point of difference came from
-`t2-refactor` and `t3-neubau`. If you build on this harness, keep those two and
-replace the others with something harder.
+`t1-debug` and `t4-feature` were solved completely by **all five** models of the
+original round. As discriminators they were worthless — every point of
+difference came from `t2-refactor` and `t3-neubau`.
+
+That held until Nemotron, which lost a point on `t1` and four on `t4`. So the
+honest version is weaker than the original claim: these two tasks separate
+nothing *among models that are good enough*, and start separating again as soon
+as one is not. `t1`'s single point is worth naming because it is a classic —
+`runde_cent(Decimal("0.125"))` returned `0.12`, Python's default banker's
+rounding, where the docstring says commercial half-up. Every other model caught
+it.
 
 ### The two failures worth reading
 
@@ -200,7 +242,9 @@ task description*, and KAT never used it in any of its 27 self-written tests.
 specified, then created a *second* `STANDARD = Register()` in `__init__.py`
 that shadowed the import. Everything visible worked: the CLI, the legacy
 module functions, its own tests. But `wandler.einheiten.STANDARD`, the path the
-task names explicitly, stayed empty forever.
+task names explicitly, stayed empty forever. Two models added later missed the
+same path in two further ways — see [three ways to fail the same
+task](#three-ways-to-fail-the-same-task).
 
 The pattern in both: **the model wrote tests for what it built, not for what
 was asked.** DeepSeek showed the same failure mode in an earlier pilot run,
@@ -210,28 +254,122 @@ because its tests covered only the three it had implemented.
 Practical consequence: *never accept "all tests pass" from a local model as
 acceptance.* Check against the requirement list.
 
+### Three ways to fail the same task
+
+`t2-refactor` names one path verbatim: the standard registry must be reachable
+as `wandler.einheiten.STANDARD`. Three of the seven models put it somewhere
+else, each in a different way, and each with a green self-written suite:
+
+| Model | What it did | Own tests | Hidden |
+|---|---|---|---|
+| Qwen-AgentWorld-35B | correct object in `einheiten.py`, plus a **second** one in `__init__.py` that shadowed it | 12 pass | 14 / 17 |
+| Qwen3.6-35B-A3B | put the object in **`basis.py`** and re-exported it from `__init__.py` | 21 pass | **0 / 17** |
+| Nemotron-3.5-Lightning | had it right, verified it, then destroyed it (see below) | collection error | **0 / 17** |
+
+("Own tests" is that model's own suite for `t2` alone.)
+
+The score spread between the first two rows is an artifact worth understanding
+before you read any of these numbers as capability. AgentWorld's registry
+*existed* at the named path and was merely empty, so the hidden suite imported
+fine and failed three assertions. Qwen's registry does not exist at that path at
+all, so `from wandler.einheiten import STANDARD` raises at **collection** time
+and pytest reports zero of seventeen. Same class of mistake, one import line
+apart, 14 points of difference.
+
+That is the finding, and it is not about Python: **a requirement that names an
+exact path is graded all-or-nothing by any import-time check.** If you grade
+agent output with a test suite, one misplaced symbol can zero a task the model
+otherwise solved. Both of these models produced working, tested, usable
+libraries. Neither produced the library that was asked for.
+
+### Nemotron: solved it, then threw it away
+
+Nemotron's `t2` is the most instructive run in this whole repo, because the
+model was finished and correct partway through. Its own verification script
+printed:
+
+```
+=== Two Independent Registers ===   r1 has einheit: True   r2 has einheit: False
+=== kopie() ===                     kopie has same units: True
+=== All tests passed! ===
+```
+
+and it summarized: *"All 17 tests pass (5 original + 12 new)."* Then the
+conversation hit opencode's compaction, which injected this:
+
+```
+The previous request exceeded the provider's size limit due to large media
+attachments. The conversation was compacted and media files were removed
+from context. […]
+Continue if you have next steps, or stop and ask for clarification.
+```
+
+There were no media attachments; the summary is a generic template. What the
+model saw after compaction was a task description, no memory of having finished
+it, and an instruction to continue. Its next tool call was:
+
+```
+$ git checkout -- .
+```
+
+It discarded a complete, verified solution and started over — then ran out of
+turns mid-rebuild, leaving `wandler/__init__.py` calling an `_einheiten` name
+that no longer existed. The package could not be imported at all. **0 / 17 for
+a task it had solved 20 minutes earlier.**
+
+This is the same failure class as [Claude Code's compaction
+thrashing](#the-harness-matters-as-much-as-the-model) below, and it points at
+the same missing property: **compaction must preserve what has already been
+achieved, not just what was asked.** A summary that
+carries the goal but drops the completion state turns a finished agent into one
+that starts over. Nemotron is a heavy reasoner, which is why it hit the limit at
+all — at 65,536 context the same task compacted too, and there the model
+responded by asking the user what to do next and stopping.
+
+Worth stating plainly: **this is a harness result, not a model result.** Nothing
+in the 0/17 measures Nemotron's ability to refactor Python.
+
 ### Test volume does not predict correctness
 
 Laguna wrote 111 tests, DeepSeek 73 — both perfect. AgentWorld wrote 66 and
 lost six points, KAT wrote 79 and lost two. There is a weak correlation at
 best. What mattered was *what* was tested, not how much.
 
+Qwen3.6-35B-A3B settles it: **125 self-written tests, all passing, 68 / 86** —
+more tests than any perfect model wrote, including 70 for the one task where it
+still missed a point. Test count is not a signal.
+
 ### Self-verification
 
 All four task descriptions explicitly asked the model to run `python -m pytest`
-before finishing. Tool call counts per model, summed over four tasks:
+before finishing. Counted from the opencode logs, summed over four tasks:
 
-| Model | Tool calls | Notes |
-|---|---|---|
-| Laguna | 23 | used tools in every task |
-| KAT | 23 | used tools in every task |
-| AgentWorld | 21 | used tools in every task |
-| Qwen3.6-27B | 18 | |
-| DeepSeek | 11 | **zero tool calls in t2 and t3** |
+| Model | pytest runs | Read/search calls | All tool calls |
+|---|---|---|---|
+| Nemotron-3.5-Lightning | 44 | 36 | 220 |
+| KAT | 21 | 23 | 169 |
+| AgentWorld | 15 | 21 | 120 |
+| Qwen3.6-35B-A3B | 18 | 18 | 116 |
+| Laguna | 6 | 23 | 76 |
+| Qwen3.6-27B | 8 | 18 | 67 |
+| DeepSeek | 5 | 11 | 57 |
 
-DeepSeek skipped the requested verification entirely on two tasks and was
-correct anyway. At this difficulty that is harmless. On harder work it is
-exactly where an unnoticed error would slip through.
+**Every model ran pytest in every task.** Compliance with that instruction was
+universal and tells you nothing.
+
+> **Correction.** An earlier version of this table showed a single "tool calls"
+> column with values 11–23 and concluded that DeepSeek "skipped the requested
+> verification entirely" in `t2` and `t3`. That was wrong. The column counted
+> only opencode's `→` lines — reads, lists, globs and greps — and not bash or
+> file writes. DeepSeek's two zeros meant it read no files with the read tool in
+> those tasks (it used `cat` through bash in `t2`, and `t3` starts from an empty
+> directory with nothing to read); it ran pytest in both. The raw JSON now
+> carries `read_search_calls`, `all_tool_calls` and `pytest_runs` separately.
+
+What the corrected numbers do show is a 4× spread in how much work each model
+does for the same result. DeepSeek reaches 86/86 in 57 tool calls; Nemotron
+spends 220 for 63/86, 92 of them in the one task it destroyed and rebuilt. More
+tool calls is not more diligence — it is usually a model that is lost.
 
 ## The harness matters as much as the model
 
@@ -263,6 +401,12 @@ opencode does the same four tasks on the same budget without compacting once.
 
 **On a 65K-context local model, use opencode.** Whether Claude Code works at
 128K is untested here.
+
+Compaction is not a Claude Code problem, though — it is a compaction problem.
+opencode compacted twice across all runs in this repo, and one of those two
+[cost a model a solved task](#nemotron-solved-it-then-threw-it-away). The
+difference is frequency, not kind: opencode's smaller footprint means it gets
+there rarely, on the tasks where a model reasons at length.
 
 ### The surprise: the harness changes *correctness*, not just speed
 
@@ -495,6 +639,20 @@ that is ~103 GiB. For Qwen3.6-27B, which needs 51 GiB, the remainder became a
 1.48M-token KV cache that no workload here could use — while the host swapped
 4.5 GiB. Lower it per model when you need headroom.
 
+**Nemotron's Mamba cache needs a bigger batch limit than vLLM's default.**
+`--mamba-cache-mode align` asserts that the state block size (4176 here) fits
+inside `max_num_batched_tokens`, whose default is 2048. The server aborts at
+startup on an assertion, not a readable error. Pass
+`--max-num-batched-tokens 8192`.
+
+**vLLM 0.26.0 cannot load Nemotron's DSpark draft model.** NVIDIA recommends
+speculative decoding with the paired DSpark checkpoint for single-Spark use, but
+the embedding loader fails with `RuntimeError: The size of tensor a (512) must
+match the size of tensor b (256)`. The main model loads cleanly. All Nemotron
+numbers here are therefore *without* speculative decoding — 56.3 tok/s is the
+floor, not the ceiling, for this model on this hardware.
+[`tools/model-switch`](tools/model-switch) keeps the flag behind `SPEC=1`.
+
 **Load times differ wildly at equal size.** KAT and AgentWorld are both 65 GB.
 AgentWorld loads in ~230 s, KAT in **655 s**. The difference tracks tensor
 count — 31,333 vs 693 — not bytes. The loader pays per tensor.
@@ -506,8 +664,17 @@ Read the numbers with these in mind:
 - **One run per model per task.** Language models vary between runs. The
   distance between 86 and 84 is well inside the noise; treat "these three solve
   this class of task reliably" as the finding, not the ranking.
-- **The suite is too easy.** Three of five models scored perfectly. A benchmark
-  where the top is crowded measures nothing at the top.
+- **The suite is too easy at the top.** Three of seven models scored perfectly.
+  A benchmark where the top is crowded measures nothing at the top. The two
+  later models did produce spread — but almost all of it comes from one
+  all-or-nothing import in one task, which is spread from grading mechanics, not
+  from difficulty.
+- **The two later models ran once, under opencode only.** Nemotron-3.5-Lightning
+  and Qwen3.6-35B-A3B were added months after the original five, on the same
+  tasks and the same 131,072-context configuration, but they have no Oh My Pi or
+  Java-harness counterpart. Given that Nemotron's entire `t2` result is a
+  compaction artifact, a second harness would very likely move its total — treat
+  63 / 86 as a number about this pairing, not about the model.
 - **Four tasks, one language, one domain.** All Python, all small self-contained
   repos, all with fully specified signatures. Nothing here says anything about
   large unfamiliar codebases, other languages, or ambiguous requirements.
@@ -521,7 +688,7 @@ Read the numbers with these in mind:
   models, Claude Code only Laguna (at 65K context — it never got far enough to
   be worth extending). Seven recovered points across three distinct defects is
   a pattern, not a proof; a second run per pairing could move any single number.
-- **The Java harness ran once per model, on two of the five.** It answers a
+- **The Java harness ran once per model, on two of the original five.** It answers a
   single question — was the `t3` failure a harness behaviour — and answers it
   clearly, because the failure mode was specific and the fix targeted it
   directly. Both models reaching 86/86 makes the parity harder to dismiss as
@@ -555,14 +722,14 @@ tools/
   model-switch            starts exactly one model, stops the others
   cc-local                launches Claude Code against a local model
 configs/
-  opencode.json           the five providers as configured
-  omp-models.yml          the same models for Oh My Pi
+  opencode.json           the seven providers as configured
+  omp-models.yml          the models for Oh My Pi (the original five)
 ```
 
 Reproducing a run:
 
 ```bash
-./tools/model-switch kat                    # or ds4 | laguna | agentworld | qwen27b
+./tools/model-switch kat   # ds4 | laguna | agentworld | qwen27b | nemotron | qwen36moe
 ./bench/run.sh kat kat/kat-coder-v2.5       # <label> <opencode provider/model>
 ```
 

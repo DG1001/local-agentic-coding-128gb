@@ -10,6 +10,8 @@
 #   model-switch kat          KAT-Coder-V2.5-Dev  :8889  (vLLM)
 #   model-switch agentworld   Qwen-AgentWorld-35B :8889  (vLLM)
 #   model-switch qwen27b      Qwen3.6-27B         :8889  (vLLM)
+#   model-switch nemotron     Nemotron-3.5-Light. :8889  (vLLM)
+#   model-switch qwen36moe    Qwen3.6-35B-A3B     :8889  (vLLM)
 #   model-switch stop         alles stoppen
 #   model-switch status       was laeuft gerade
 #
@@ -28,6 +30,42 @@ IMAGE=vllm/vllm-openai:latest
 load_spec() {
     EXTRA=()
     case "$1" in
+        nemotron)
+            # Startzeile nach NVIDIAs Empfehlung fuer DGX Spark. Das Entwurfs-
+            # modell (DSpark) ist dort ausdruecklich die Vorgabe fuer einzelne
+            # Sparks und latenzempfindliches Arbeiten -- also genau unser Fall.
+            DIR=NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4
+            # 131072 wie bei den anderen MoE-Modellen der Tabelle. Mit 65536
+            # lief opencode bei zwei von vier Aufgaben in die Kompaktierung,
+            # was das Modell benachteiligte -- es kann selbst 1M.
+            SERVED=nemotron-3.5-lightning; DEF_CTX=131072
+            # Ohne spekulatives Dekodieren: vLLM 0.26.0 kann das DSpark-Entwurfs-
+            # modell nicht laden -- beim Einlesen der Einbettungsmatrix passen
+            # die Formen nicht (512 gegen 256). Das Hauptmodell laedt sauber.
+            # Mit SPEC=1 laesst es sich trotzdem versuchen, etwa unter einem
+            # neueren vLLM oder dem Spark-Abbild der Gemeinschaft.
+            EXTRA=()
+            [ "${SPEC:-0}" = 1 ] && EXTRA+=(--speculative-config '{"model":"/models/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4-DSpark","num_speculative_tokens":3}')
+            # --mamba-cache-mode align verlangt, dass die Stapelgrenze mindestens
+            # so gross ist wie die Blockgroesse des Zustandsspeichers (hier
+            # 4176). vLLMs Vorgabe von 2048 ist kleiner, und der Start bricht
+            # mit einer Zusicherungsverletzung ab.
+            EXTRA+=(--moe-backend marlin
+                   --max-num-batched-tokens 8192
+                   --enable-prefix-caching
+                   --mamba-backend flashinfer
+                   --mamba-cache-mode align
+                   --reasoning-parser nemotron_v3
+                   --tool-call-parser qwen3_coder
+                   --enable-auto-tool-choice) ;;
+
+        qwen36moe)
+            # Das Qwen-MoE, das in der Tabelle fehlte: 35B gesamt, 3B aktiv --
+            # dieselbe Bauart, die auf dieser Hardware gewinnt. Getestet hatten
+            # wir bisher nur eine Ableitung davon (AgentWorld) und das dichte 27B.
+            DIR=Qwen3.6-35B-A3B-FP8; SERVED=qwen3.6-35b-a3b; DEF_CTX=131072
+            EXTRA=(--tool-call-parser qwen3_xml --reasoning-parser qwen3) ;;
+
         laguna)
             DIR=Laguna-S-2.1-NVFP4; SERVED=laguna-s-2.1; DEF_CTX=65536
             EXTRA=(--speculative-config '{"model":"/models/Laguna-S-2.1-DFlash-NVFP4","num_speculative_tokens":15}'
@@ -115,6 +153,13 @@ start_vllm() {
 
     stop_ds4; stop_vllm
     mkdir -p "$HOME/.cache/vllm"
+    # --default-chat-template-kwargs '{"enable_thinking": false}':
+    # Ohne das liefern die Reasoning-Modelle ein Format, das die Parser nicht
+    # trennen -- die Gedankenkette landet samt verwaistem </think> im Antwort-
+    # text. Anfragewerte haben Vorrang, opencode setzt es weiterhin selbst;
+    # der Vorgabewert ist fuer Clients wie Claude Code, die ueber die
+    # Anthropic-API sprechen und das Feld gar nicht mitgeben koennen.
+    #
     # Bewusst OHNE --rm: stirbt der Container, bleiben die Logs zur Diagnose.
     docker rm -f "$CONTAINER" >/dev/null 2>&1 || true
 
@@ -129,6 +174,7 @@ start_vllm() {
         --served-model-name "$SERVED" \
         --enable-auto-tool-choice \
         "${EXTRA[@]}" \
+        --default-chat-template-kwargs '{"enable_thinking": false}' \
         --max-num-seqs 32 \
         --max-model-len "${CTX:-$DEF_CTX}" \
         --gpu-memory-utilization "${GPU_UTIL:-0.85}" \
@@ -158,7 +204,7 @@ status() {
 
 case "${1:-status}" in
     ds4)                          start_ds4 ;;
-    laguna|kat|agentworld|qwen27b) start_vllm "$1" ;;
+    laguna|kat|agentworld|qwen27b|nemotron|qwen36moe) start_vllm "$1" ;;
     stop)   stop_ds4; stop_vllm; echo "Alles gestoppt."; free -h | awk 'NR==2{print "Frei: "$7}' ;;
     status) status ;;
     *)      sed -n '2,18p' "$0"; exit 2 ;;

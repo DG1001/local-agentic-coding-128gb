@@ -65,9 +65,14 @@
           "temperature": true,
           "reasoning": false,
           "options": {
-            "chat_template_kwargs": { "enable_thinking": false }
+            "chat_template_kwargs": {
+              "enable_thinking": false
+            }
           },
-          "limit": { "context": 131072, "output": 32768 }
+          "limit": {
+            "context": 131072,
+            "output": 32768
+          }
         }
       }
     },
@@ -87,9 +92,14 @@
           "temperature": true,
           "reasoning": false,
           "options": {
-            "chat_template_kwargs": { "enable_thinking": false }
+            "chat_template_kwargs": {
+              "enable_thinking": false
+            }
           },
-          "limit": { "context": 131072, "output": 32768 }
+          "limit": {
+            "context": 131072,
+            "output": 32768
+          }
         }
       }
     },
@@ -109,9 +119,44 @@
           "temperature": true,
           "reasoning": false,
           "options": {
-            "chat_template_kwargs": { "enable_thinking": false }
+            "chat_template_kwargs": {
+              "enable_thinking": false
+            }
           },
-          "limit": { "context": 131072, "output": 32768 }
+          "limit": {
+            "context": 131072,
+            "output": 32768
+          }
+        }
+      }
+    },
+    "nemotron": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Nemotron (lokal)",
+      "options": {
+        "baseURL": "http://127.0.0.1:8889/v1",
+        "apiKey": "unused",
+        "headerTimeout": 600000,
+        "timeout": 3600000
+      },
+      "models": {
+        "nemotron-3.5-lightning": {
+          "name": "Nemotron 3.5 Lightning 30B-A3B"
+        }
+      }
+    },
+    "qwen36moe": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Qwen3.6 MoE (lokal)",
+      "options": {
+        "baseURL": "http://127.0.0.1:8889/v1",
+        "apiKey": "unused",
+        "headerTimeout": 600000,
+        "timeout": 3600000
+      },
+      "models": {
+        "qwen3.6-35b-a3b": {
+          "name": "Qwen3.6 35B-A3B"
         }
       }
     }
