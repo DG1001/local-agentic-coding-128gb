@@ -52,7 +52,7 @@ only model here that was run more than once. Three runs on the identical tasks
 at identical limits produced 63/86, 64/86 and 85/86 — a 22-point spread that is
 **wider than the gap between first and last place in this table**, every other
 row of which is a single run. Details in [one run is not a
-measurement](streuung.md#one-run-is-not-a-measurement). Read the ranking accordingly: it
+measurement](variance.md#one-run-is-not-a-measurement). Read the ranking accordingly: it
 separates "solves this class of task" from "does not", and nothing finer.
 
 Three models scored perfectly. The interesting column is wall clock: the dense
@@ -94,9 +94,9 @@ Quantization is the second lever and it is nearly as large: among models that
 activate ~3B parameters, NVFP4 reads 78.7 tok/s where BF16 reads 30.8.
 Speculative decoding is the third, worth another 1.5×.
 
-![Durchsatz](bilder/durchsatz.svg)
+![Throughput by model](charts/throughput.svg)
 
-→ [**Speed on this machine**](geschwindigkeit.md) — the arithmetic, the
+→ [**Speed on this machine**](speed.md) — the arithmetic, the
 method, what quantization and speculative decoding are each worth, and a
 correction to an earlier version of this table.
 
@@ -106,13 +106,13 @@ Every row of the summary table is a single run. Nemotron is the only model that
 was run repeatedly, thirteen times on the identical tasks. **Those thirteen runs
 span 38 points. The seven different models span 23.**
 
-![Streuung](bilder/streuung.svg)
+![Score spread across repeated runs](charts/variance.svg)
 
 The ranking above therefore separates "solves this class of task" from "does
 not", and nothing finer. Three separate explanations were offered for one of
 those low scores before repetition showed all three were wrong.
 
-→ [**One run is not a measurement**](streuung.md) — the three explanations,
+→ [**One run is not a measurement**](variance.md) — the three explanations,
 why each failed, and what in this repo is *not* affected by it.
 
 ### 3. The harness changes correctness, not just speed
@@ -133,14 +133,14 @@ the same task in three different ways, each with a green self-written suite,
 each by building something that works instead of what was specified. One wrote
 125 passing tests and scored 68/86.
 
-![Punkte je Aufgabe](bilder/aufgaben.svg)
+![Hidden tests passed per task](charts/tasks.svg)
 
-→ [**The benchmark and what it found**](aufgaben.md) — task design, per-task
+→ [**The benchmark and what it found**](benchmark.md) — task design, per-task
 results, and the three defects in detail.
 
 ### Also here
 
-→ [**Running these models**](betrieb.md) — vLLM flags that cost real
+→ [**Running these models**](operations.md) — vLLM flags that cost real
 debugging time, and three configuration traps that all fail mid-task.
 
 ## Limitations
@@ -150,7 +150,7 @@ Read the numbers with these in mind:
 - **One run per model per task — and that is now the headline limitation, not
   a footnote.** The only model run three times spread 22 points across those
   runs, wider than first-to-last in the summary table. See [one run is not a
-  measurement](streuung.md#one-run-is-not-a-measurement). Treat "these solve this class of
+  measurement](variance.md#one-run-is-not-a-measurement). Treat "these solve this class of
   task, those do not" as the finding; treat every ordering finer than that as
   unsupported.
 - **The suite is too easy at the top.** Three of seven models scored perfectly.

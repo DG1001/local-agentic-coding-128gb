@@ -4,7 +4,7 @@ nav_order: 3
 description: Thirteen runs of one model span more than seven different models do.
 ---
 
-[← Uebersicht](index.md)
+[← Overview](index.md)
 
 ## Nemotron: solved it, then threw it away
 

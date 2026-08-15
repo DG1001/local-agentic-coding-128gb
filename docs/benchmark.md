@@ -4,7 +4,7 @@ nav_order: 4
 description: Task design, per-task results, and the defects worth reading.
 ---
 
-[← Uebersicht](index.md)
+[← Overview](index.md)
 
 ## The benchmark
 

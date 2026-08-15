@@ -1,24 +1,23 @@
 #!/usr/bin/env python3
-"""Erzeugt die Diagramme des Berichts aus den Messdaten unter results/.
+"""Regenerates the report's charts from the measurements under results/.
 
-Bewusst ohne Fremdbibliothek und bewusst *aus den JSON-Dateien*: ein Diagramm,
-das von Hand gepflegt wird, laeuft irgendwann den Zahlen davon, und genau das
-ist in diesem Repo schon zweimal passiert (die tokens/s-Spalte und die
-Werkzeugaufrufe). Was hier herauskommt, kann nur falsch sein, wenn die Rohdaten
-falsch sind.
+No third-party library, and deliberately driven *by the JSON files*: a chart
+kept up to date by hand eventually drifts away from its data, and that has
+already happened twice in this repo (the tokens/s column and the tool-call
+counts). What comes out of here can only be wrong if the raw data is.
 
-    python3 tools/diagramme.py        # schreibt nach docs/bilder/
+    python3 tools/diagramme.py        # writes docs/charts/
 
-Die Farben sind Mitteltoene, die auf hellem wie dunklem GitHub-Hintergrund
-lesbar bleiben; der Hintergrund selbst bleibt durchsichtig.
+Colours are mid-tones that stay legible on light and dark GitHub backgrounds;
+the background itself is left transparent.
 """
 import json
 import pathlib
 
 WURZEL = pathlib.Path(__file__).resolve().parent.parent
-ZIEL = WURZEL / "docs" / "bilder"
+ZIEL = WURZEL / "docs" / "charts"
 
-# Mitteltoene: auf #ffffff und auf #0d1117 gleichermassen lesbar
+# Mid-tones: legible on both #ffffff and #0d1117
 TEXT = "#7d8590"
 ACHSE = "#6e7781"
 BALKEN = "#2f81f7"
@@ -37,7 +36,7 @@ def kopf(breite, hoehe, titel):
 
 
 def balken_doppelt(daten, titel, einheit, datei, breite=760):
-    """Zwei Balken je Zeile: (Beschriftung, wert1, wert2, hervorheben)."""
+    """Two bars per row: (label, value1, value2, highlight)."""
     zeilenhoehe = 38
     links = 250
     oben = 54
@@ -65,17 +64,17 @@ def balken_doppelt(daten, titel, einheit, datei, breite=760):
 
     y = oben + len(daten) * zeilenhoehe + 14
     s.append(f'<rect x="{links}" y="{y}" width="11" height="11" rx="2" fill="{BALKEN}"/>')
-    s.append(f'<text x="{links + 16}" y="{y + 10}" font-size="11" fill="{ACHSE}">Erzeugung</text>')
+    s.append(f'<text x="{links + 16}" y="{y + 10}" font-size="11" fill="{ACHSE}">generation</text>')
     s.append(f'<rect x="{links + 92}" y="{y}" width="11" height="11" rx="2" fill="{BALKEN2}" opacity="0.75"/>')
     s.append(f'<text x="{links + 108}" y="{y + 10}" font-size="11" fill="{ACHSE}">'
-             f'Ende-zu-Ende (~16.850 Token Eingabe)</text>')
+             f'end-to-end (~16,850 input tokens)</text>')
     s.append('</svg>')
     (ZIEL / datei).write_text("\n".join(s) + "\n")
     return ZIEL / datei
 
 
 def punkte(reihen, titel, untertitel, datei, breite=760, xmin=40, xmax=90):
-    """Punktwolke je Zeile — fuer Streuung ueber Wiederholungen."""
+    """One dot strip per row — for spread across repeated runs."""
     zeilenhoehe = 46
     links = 250
     oben = 62
@@ -86,7 +85,7 @@ def punkte(reihen, titel, untertitel, datei, breite=760, xmin=40, xmax=90):
     s.append(f'<text x="0" y="20" font-size="14" font-weight="600" fill="{TEXT}">{titel}</text>')
     s.append(f'<text x="0" y="38" font-size="11" fill="{ACHSE}">{untertitel}</text>')
 
-    # Achse
+    # axis
     for wert in range(xmin, xmax + 1, 10):
         x = links + (wert - xmin) * skala
         s.append(f'<line x1="{x:.1f}" y1="{oben - 8}" x2="{x:.1f}" y2="{hoehe - 26}" '
@@ -96,8 +95,8 @@ def punkte(reihen, titel, untertitel, datei, breite=760, xmin=40, xmax=90):
 
     for i, (name, werte, farbe) in enumerate(reihen):
         y = oben + i * zeilenhoehe
-        # SVG bricht Text nicht um: zweizeilige Beschriftungen brauchen zwei
-        # Elemente, sonst steht alles in einer Zeile und laeuft ins Diagramm.
+        # SVG does not wrap text: a two-line label needs two elements, or it
+        # runs as one line straight into the plot area.
         teile = name.split("\n")
         s.append(f'<text x="{links - 8}" y="{y + 2}" font-size="12" text-anchor="end" '
                  f'fill="{TEXT}">{teile[0]}</text>')
@@ -110,7 +109,7 @@ def punkte(reihen, titel, untertitel, datei, breite=760, xmin=40, xmax=90):
             s.append(f'<line x1="{x1:.1f}" y1="{y + 2}" x2="{x2:.1f}" y2="{y + 2}" '
                      f'stroke="{farbe}" stroke-width="2" opacity="0.35"/>')
             s.append(f'<text x="{x2 + 10:.1f}" y="{y + 6}" font-size="10" fill="{ACHSE}">'
-                     f'Spanne {max(werte) - min(werte)}</text>')
+                     f'spread {max(werte) - min(werte)}</text>')
         for w in werte:
             x = links + (w - xmin) * skala
             s.append(f'<circle cx="{x:.1f}" cy="{y + 2}" r="4.5" fill="{farbe}" opacity="0.85"/>')
@@ -120,7 +119,7 @@ def punkte(reihen, titel, untertitel, datei, breite=760, xmin=40, xmax=90):
 
 
 def gestapelt(daten, titel, untertitel, datei, breite=760):
-    """Ein Balken je Modell, in vier Abschnitte geteilt (die vier Aufgaben)."""
+    """One bar per model, split into the four tasks."""
     zeilenhoehe = 30
     links = 250
     oben = 62
@@ -142,7 +141,7 @@ def gestapelt(daten, titel, untertitel, datei, breite=760):
             if w:
                 s.append(f'<rect x="{x:.1f}" y="{y + 1}" width="{w * skala:.1f}" height="15" '
                          f'fill="{farben[j]}"/>')
-            # fehlende Punkte als blasse Luecke
+            # missing points as a faint gap
             if w < voll[j]:
                 s.append(f'<rect x="{x + w * skala:.1f}" y="{y + 1}" '
                          f'width="{(voll[j] - w) * skala:.1f}" height="15" '
@@ -167,34 +166,34 @@ def main():
     daten = [(v["name"].replace("NVIDIA-Nemotron-3.5-Lightning-30B-A3B", "Nemotron-3.5-Lightning"),
               v["generation_tok_s"], v["end_to_end_tok_s"],
               v["speculative_decoding"]) for v in reihe]
-    p = balken_doppelt(daten, "Durchsatz auf dem GX10",
-                       "Token je Sekunde · gruen = mit spekulativem Dekodieren",
-                       "durchsatz.svg")
-    print("geschrieben:", p.relative_to(WURZEL))
+    p = balken_doppelt(daten, "Throughput on the GX10",
+                       "tokens per second · green = with speculative decoding",
+                       "throughput.svg")
+    print("written:", p.relative_to(WURZEL))
 
-    # --- Streuung: ein Modell, viele Laeufe, gegen sieben Modelle, je ein Lauf
+    # --- spread: one model many runs, against seven models one run each
     v = json.loads((WURZEL / "results" / "variance.json").read_text())
     m = json.loads((WURZEL / "results" / "measurements.json").read_text())
     tabelle = sorted((x["total_hidden_passed"] for x in m.values()), reverse=True)
     p = punkte(
-        [("Nemotron-3.5-Lightning\nderselbe Aufbau, %d Laeufe" % len(v["all_nemotron_scores"]),
+        [("Nemotron-3.5-Lightning\nsame setup, %d runs" % len(v["all_nemotron_scores"]),
           v["all_nemotron_scores"], WARN),
-         ("die %d Modelle der Tabelle\nje EIN Lauf" % len(tabelle), tabelle, BALKEN)],
-        "Ein Modell streut breiter als das ganze Feld",
-        "bestandene verdeckte Tests von 86 · identische Aufgaben, identische Suiten",
-        "streuung.svg")
-    print("geschrieben:", p.relative_to(WURZEL))
+         ("the %d models in the table\nONE run each" % len(tabelle), tabelle, BALKEN)],
+        "One model spreads wider than the whole field",
+        "hidden tests passed, of 86 · identical tasks, identical suites",
+        "variance.svg")
+    print("written:", p.relative_to(WURZEL))
 
-    # --- Pruefstand je Aufgabe
+    # --- hidden tests passed, per task
     reihenfolge = sorted(m.items(), key=lambda kv: -kv[1]["total_hidden_passed"])
     daten = [(v2["name"].replace("NVIDIA-Nemotron-3.5-Lightning-30B-A3B", "Nemotron-3.5-Lightning"),
               [v2["tasks"][a2]["hidden_passed"] for a2 in
                ("t1-debug", "t2-refactor", "t3-neubau", "t4-feature")])
              for _, v2 in reihenfolge]
-    p = gestapelt(daten, "Wo die Punkte verloren gehen",
-                  "blass = nicht bestanden · opencode, ein Lauf je Modell",
-                  "aufgaben.svg")
-    print("geschrieben:", p.relative_to(WURZEL))
+    p = gestapelt(daten, "Where the points are lost",
+                  "faint = not passed · opencode, one run per model",
+                  "tasks.svg")
+    print("written:", p.relative_to(WURZEL))
 
 
 if __name__ == "__main__":

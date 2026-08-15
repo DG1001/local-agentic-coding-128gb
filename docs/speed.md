@@ -4,7 +4,7 @@ nav_order: 2
 description: Bandwidth, the throughput method, what quantization and speculative decoding are worth.
 ---
 
-[← Uebersicht](index.md)
+[← Overview](index.md)
 
 ## The headline: bandwidth, not compute
 
@@ -110,7 +110,7 @@ short: a full benchmark run takes 13:12 with DSpark against 22:20 without, and
 without — but speculative decoding preserves the target model's output
 distribution, so it cannot make a model more correct. Those 21 points are
 sampling variance, and finding them is what turned [one run is not a
-measurement](streuung.md#one-run-is-not-a-measurement) from a caveat into the most
+measurement](variance.md#one-run-is-not-a-measurement) from a caveat into the most
 important paragraph in this README. Do not read the score difference as a
 DSpark result.
 

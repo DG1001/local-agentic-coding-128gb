@@ -4,7 +4,7 @@ nav_order: 5
 description: opencode, Oh My Pi, Claude Code and a purpose-built Java harness.
 ---
 
-[← Uebersicht](index.md)
+[← Overview](index.md)
 
 ## The harness matters as much as the model
 
@@ -40,7 +40,7 @@ opencode does the same four tasks on the same budget without compacting once.
 Compaction is not a Claude Code problem, though — it is a compaction problem.
 opencode compacted twice across all runs in this repo, and one of those two
 [destroyed a solution a model had already finished and
-verified](streuung.md#nemotron-solved-it-then-threw-it-away). The difference is frequency,
+verified](variance.md#nemotron-solved-it-then-threw-it-away). The difference is frequency,
 not kind: opencode's smaller footprint means it gets there rarely, on the tasks
 where a model reasons at length. (That model went on to fail the same task in a
 harness that never compacts, so the compaction cost it work, not the score —
@@ -159,7 +159,7 @@ calls and worked in very small steps. Where a task rewards deliberation the
 extra turns cost wall clock; where it rewards a direct edit they do not.
 
 **Nemotron-3.5-Lightning**, added later for a different question — whether its
-`t2` zero was [opencode's compaction](streuung.md#nemotron-solved-it-then-threw-it-away).
+`t2` zero was [opencode's compaction](variance.md#nemotron-solved-it-then-threw-it-away).
 Both runs at 131,072 / 32,768, so the harness is the only difference:
 
 | Task | Java harness | opencode |
@@ -173,7 +173,7 @@ Both runs at 131,072 / 32,768, so the harness is the only difference:
 A third run followed, same harness and limits, with NVIDIA's DSpark draft model
 on the server: **85 / 86 in 13:12**, with `t2-refactor` at 17/17. That result
 belongs to [one run is not a
-measurement](streuung.md#one-run-is-not-a-measurement) rather than to this comparison — it
+measurement](variance.md#one-run-is-not-a-measurement) rather than to this comparison — it
 says more about run-to-run variance than about any harness.
 
 One point apart on the total, and **every single task different underneath.**

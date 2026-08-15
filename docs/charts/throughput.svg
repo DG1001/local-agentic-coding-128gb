@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="760" height="402" viewBox="0 0 760 402" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif">
-<title>Durchsatz auf dem GX10</title>
-<text x="0" y="20" font-size="14" font-weight="600" fill="#7d8590">Durchsatz auf dem GX10</text>
-<text x="0" y="38" font-size="11" fill="#6e7781">Token je Sekunde · gruen = mit spekulativem Dekodieren</text>
+<title>Throughput on the GX10</title>
+<text x="0" y="20" font-size="14" font-weight="600" fill="#7d8590">Throughput on the GX10</text>
+<text x="0" y="38" font-size="11" fill="#6e7781">tokens per second · green = with speculative decoding</text>
 <text x="242" y="66" font-size="12" text-anchor="end" fill="#7d8590">Nemotron-3.5-Lightning + DSpark</text>
 <rect x="250" y="56" width="420.0" height="13" rx="2" fill="#1a7f37"/>
 <text x="676.0" y="67" font-size="11" fill="#7d8590">121.4</text>
@@ -43,7 +43,7 @@
 <rect x="250" y="337" width="14.2" height="13" rx="2" fill="#8250df" opacity="0.75"/>
 <text x="270.2" y="348" font-size="11" fill="#6e7781">4.1</text>
 <rect x="250" y="372" width="11" height="11" rx="2" fill="#2f81f7"/>
-<text x="266" y="382" font-size="11" fill="#6e7781">Erzeugung</text>
+<text x="266" y="382" font-size="11" fill="#6e7781">generation</text>
 <rect x="342" y="372" width="11" height="11" rx="2" fill="#8250df" opacity="0.75"/>
-<text x="358" y="382" font-size="11" fill="#6e7781">Ende-zu-Ende (~16.850 Token Eingabe)</text>
+<text x="358" y="382" font-size="11" fill="#6e7781">end-to-end (~16,850 input tokens)</text>
 </svg>

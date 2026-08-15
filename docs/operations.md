@@ -4,7 +4,7 @@ nav_order: 6
 description: vLLM flags and configuration traps that cost real debugging time.
 ---
 
-[← Uebersicht](index.md)
+[← Overview](index.md)
 
 ## Gotchas that cost real time
 
@@ -55,7 +55,7 @@ of tensor b (256)` — and that looked like a broken checkpoint or a bad flag fo
 a while. It was neither: 0.26.0 does not know the `Qwen3DSparkModel`
 architecture. The card names `vllm/vllm-openai:v0.27.1` in one line, and on that
 image it works first try and is worth
-[1.5× throughput](geschwindigkeit.md#speculative-decoding-is-worth-more-than-a-bigger-model).
+[1.5× throughput](speed.md#speculative-decoding-is-worth-more-than-a-bigger-model).
 `tools/model-switch nemotronspec` starts it.
 
 **Load times differ wildly at equal size.** KAT and AgentWorld are both 65 GB.
