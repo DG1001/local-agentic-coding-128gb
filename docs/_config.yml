@@ -1,0 +1,37 @@
+title: Local agentic coding on 128 GB
+description: >-
+  Seven large local LLMs, four realistic coding tasks, 86 hidden tests each,
+  on one ASUS Ascent GX10 (NVIDIA GB10, DGX Spark class).
+
+remote_theme: just-the-docs/just-the-docs
+
+# Der Bericht lebt von Tabellen und Diagrammen; die Suche macht die
+# Querverweise zwischen den fuenf Seiten brauchbar.
+search_enabled: true
+search:
+  heading_level: 3
+  previews: 3
+
+color_scheme: light
+heading_anchors: true
+
+aux_links:
+  "Repository auf GitHub":
+    - "https://github.com/DG1001/local-agentic-coding-128gb"
+aux_links_new_tab: true
+
+# Fusszeile: der Bericht korrigiert sich selbst, das gehoert sichtbar dazu.
+footer_content: >-
+  MIT. Jede Zahl hier stammt aus <code>results/*.json</code>; die Diagramme
+  werden daraus von <code>tools/diagramme.py</code> erzeugt. Korrekturen
+  fruehere Fassungen stehen im Text, nicht im Papierkorb.
+
+back_to_top: true
+back_to_top_text: "nach oben"
+
+plugins:
+  - jekyll-remote-theme
+  - jekyll-seo-tag
+
+exclude:
+  - bilder/*.py

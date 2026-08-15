@@ -1,4 +1,8 @@
-# Local agentic coding on 128 GB unified memory (DGX Spark class)
+---
+title: Overview
+nav_order: 1
+description: Seven large local LLMs on one GX10 — what limits them, and why one run per model was not enough.
+---
 
 Seven large local LLMs, four realistic coding tasks, 86 hidden tests each, one
 ASUS Ascent GX10 — **NVIDIA GB10, 128 GB unified memory**, the same chip and
@@ -7,7 +11,7 @@ memory configuration as the NVIDIA DGX Spark. Everything ran locally through
 and [Oh My Pi](https://github.com/can1357/oh-my-pi) against endpoints on
 `127.0.0.1` — no cloud API, no per-token cost. A fourth, purpose-built harness
 was added later to test specific claims about the other three; see
-[below](docs/harness.md#testing-that-theory-a-fourth-harness-written-to-check-one-claim).
+[below](harness.md#testing-that-theory-a-fourth-harness-written-to-check-one-claim).
 
 Models: DeepSeek-V4-Flash, Laguna-S-2.1 (poolside), KAT-Coder-V2.5,
 Qwen-AgentWorld-35B-A3B, Qwen3.6-27B, and — added later — NVIDIA
@@ -48,7 +52,7 @@ only model here that was run more than once. Three runs on the identical tasks
 at identical limits produced 63/86, 64/86 and 85/86 — a 22-point spread that is
 **wider than the gap between first and last place in this table**, every other
 row of which is a single run. Details in [one run is not a
-measurement](docs/streuung.md#one-run-is-not-a-measurement). Read the ranking accordingly: it
+measurement](streuung.md#one-run-is-not-a-measurement). Read the ranking accordingly: it
 separates "solves this class of task" from "does not", and nothing finer.
 
 Three models scored perfectly. The interesting column is wall clock: the dense
@@ -72,7 +76,7 @@ same 128 GB unified LPDDR5X, so the bandwidth findings below transfer directly.
 Nothing here depends on the ASUS badge.
 
 Only one model runs at a time — DeepSeek alone occupies ~113 GiB. The
-[`tools/model-switch`](tools/model-switch) script in this repo stops whatever
+[`tools/model-switch`](https://github.com/DG1001/local-agentic-coding-128gb/blob/main/tools/model-switch) script in this repo stops whatever
 is running before starting the next one.
 
 ## The four findings
@@ -90,9 +94,9 @@ Quantization is the second lever and it is nearly as large: among models that
 activate ~3B parameters, NVFP4 reads 78.7 tok/s where BF16 reads 30.8.
 Speculative decoding is the third, worth another 1.5×.
 
-![Durchsatz](docs/bilder/durchsatz.svg)
+![Durchsatz](bilder/durchsatz.svg)
 
-→ [**Speed on this machine**](docs/geschwindigkeit.md) — the arithmetic, the
+→ [**Speed on this machine**](geschwindigkeit.md) — the arithmetic, the
 method, what quantization and speculative decoding are each worth, and a
 correction to an earlier version of this table.
 
@@ -102,13 +106,13 @@ Every row of the summary table is a single run. Nemotron is the only model that
 was run repeatedly, thirteen times on the identical tasks. **Those thirteen runs
 span 38 points. The seven different models span 23.**
 
-![Streuung](docs/bilder/streuung.svg)
+![Streuung](bilder/streuung.svg)
 
 The ranking above therefore separates "solves this class of task" from "does
 not", and nothing finer. Three separate explanations were offered for one of
 those low scores before repetition showed all three were wrong.
 
-→ [**One run is not a measurement**](docs/streuung.md) — the three explanations,
+→ [**One run is not a measurement**](streuung.md) — the three explanations,
 why each failed, and what in this repo is *not* affected by it.
 
 ### 3. The harness changes correctness, not just speed
@@ -118,7 +122,7 @@ seven points across three named defects. Claude Code scores 9/86 on a
 65K-context model because its own baseline footprint will not fit, and every
 task dies in compaction thrashing.
 
-→ [**The harness matters as much as the model**](docs/harness.md) — including a
+→ [**The harness matters as much as the model**](harness.md) — including a
 purpose-built Java harness written to test one claim, and what its tool set is
 worth measured.
 
@@ -129,14 +133,14 @@ the same task in three different ways, each with a green self-written suite,
 each by building something that works instead of what was specified. One wrote
 125 passing tests and scored 68/86.
 
-![Punkte je Aufgabe](docs/bilder/aufgaben.svg)
+![Punkte je Aufgabe](bilder/aufgaben.svg)
 
-→ [**The benchmark and what it found**](docs/aufgaben.md) — task design, per-task
+→ [**The benchmark and what it found**](aufgaben.md) — task design, per-task
 results, and the three defects in detail.
 
 ### Also here
 
-→ [**Running these models**](docs/betrieb.md) — vLLM flags that cost real
+→ [**Running these models**](betrieb.md) — vLLM flags that cost real
 debugging time, and three configuration traps that all fail mid-task.
 
 ## Limitations
@@ -146,7 +150,7 @@ Read the numbers with these in mind:
 - **One run per model per task — and that is now the headline limitation, not
   a footnote.** The only model run three times spread 22 points across those
   runs, wider than first-to-last in the summary table. See [one run is not a
-  measurement](docs/streuung.md#one-run-is-not-a-measurement). Treat "these solve this class of
+  measurement](streuung.md#one-run-is-not-a-measurement). Treat "these solve this class of
   task, those do not" as the finding; treat every ordering finer than that as
   unsupported.
 - **The suite is too easy at the top.** Three of seven models scored perfectly.
@@ -190,64 +194,9 @@ Read the numbers with these in mind:
   for a model already shown to be impractical here. An omission, not a gap in
   the data.
 
-## Layout
+## Alles weitere
 
-```
-README.md                 the four findings, with the charts
-docs/
-  geschwindigkeit.md      bandwidth, throughput method, quantization, DSpark
-  streuung.md             why one run per model is not enough
-  aufgaben.md             task design, per-task results, the named defects
-  harness.md              opencode vs Oh My Pi vs Claude Code vs the Java harness
-  betrieb.md              vLLM flags and configuration traps
-  bilder/                 charts, regenerated by tools/diagramme.py from results/
-bench/
-  run.sh                  runs all four tasks for one model, then grades
-  run-claude-code.sh      same four tasks, Claude Code as the harness
-  run-omp.sh              same four tasks, Oh My Pi as the harness
-  run-java.sh             same four tasks, the purpose-built Java harness
-                          (github.com/DG1001/jaja)
-  tasks/<task>/
-    task.md               the prompt handed to the agent, verbatim
-    seed/                 starting repository (absent for t3-neubau)
-    test_bench.py         hidden grading suite — never visible to the model
-results/
-  measurements.json       opencode runs, machine-readable
-  omp-measurements.json   Oh My Pi runs, machine-readable
-  throughput.json         tokens/s for every model, one method, with the method
-  variance.json           every repeated run of the same model
-  java-measurements.json  purpose-built-harness runs, machine-readable
-  logs/                   per-model, per-harness timeline of each run
-                          (including all three Nemotron runs)
-tools/
-  model-switch            starts exactly one model, stops the others
-  diagramme.py            regenerates docs/bilder/*.svg from results/*.json
-  cc-local                launches Claude Code against a local model
-configs/
-  opencode.json           the seven providers as configured
-  omp-models.yml          the models for Oh My Pi (the original five)
-```
-
-Reproducing a run:
-
-```bash
-./tools/model-switch kat   # ds4 | laguna | agentworld | qwen27b | nemotron |
-                           # qwen36moe | nemotronspec (Nemotron + DSpark, vLLM 0.27.1)
-./bench/run.sh kat kat/kat-coder-v2.5       # <label> <opencode provider/model>
-```
-
-Results land in `runs/<label>/`. Requires opencode, Docker, Python 3.12 and
-the models on disk.
-
-### One harness note
-
-Long `opencode run` invocations must be detached with `setsid`, or a session
-manager can reap them mid-flight and take the child process with it. Two early
-runs died this way and looked like model failures until the logs said
-otherwise. `run.sh` writes a completion file that an external watcher polls.
-
-## License
-
-MIT — see [LICENSE](LICENSE). The seed repositories and task descriptions are
-part of this repo and under the same license; the models themselves are not,
-and each carries its own terms.
+Aufbau, Rohdaten und Reproduktion stehen im
+[Repository](https://github.com/DG1001/local-agentic-coding-128gb) —
+einschliesslich der Aufgaben, der verdeckten Testsuiten und der
+Skripte, mit denen jede Zahl hier entstanden ist.

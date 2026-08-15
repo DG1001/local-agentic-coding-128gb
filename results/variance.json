@@ -1,0 +1,72 @@
+{
+  "note": "Every model in the summary table is a single run. Nemotron is the only one run repeatedly. These are those runs, all on the identical four tasks with the identical hidden suites.",
+  "nemotron_runs": [
+    {
+      "label": "opencode, no DSpark",
+      "harness": "opencode",
+      "context": 131072,
+      "max_turns": null,
+      "score": 63,
+      "seconds": 2189
+    },
+    {
+      "label": "Java harness, no DSpark",
+      "harness": "jaja",
+      "context": 131072,
+      "max_turns": 80,
+      "score": 64,
+      "seconds": 1340
+    },
+    {
+      "label": "Java harness + DSpark",
+      "harness": "jaja",
+      "context": 131072,
+      "max_turns": 80,
+      "score": 85,
+      "seconds": 792
+    }
+  ],
+  "abgleich_series": {
+    "question": "Does asking the model to check the task statement point by point before finishing help?",
+    "model": "Nemotron-3.5-Lightning + DSpark",
+    "harness": "jaja",
+    "context": 131072,
+    "max_turns": 80,
+    "rounds": 5,
+    "verdict": "No effect measurable — and the series could not have measured one: 17 of 40 task runs hit the 80-turn limit, so the binding constraint was the turn budget, not the mechanism. The check itself costs turns from that same budget.",
+    "ohne": [
+      79,
+      71,
+      80,
+      73,
+      63
+    ],
+    "mit": [
+      81,
+      81,
+      47,
+      79,
+      75
+    ],
+    "turn_limited_task_runs": {
+      "ohne": 8,
+      "mit": 9,
+      "of": 20
+    }
+  },
+  "all_nemotron_scores": [
+    63,
+    64,
+    85,
+    79,
+    71,
+    80,
+    73,
+    63,
+    81,
+    81,
+    47,
+    79,
+    75
+  ]
+}
