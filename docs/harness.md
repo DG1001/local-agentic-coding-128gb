@@ -52,6 +52,11 @@ There is a claim you hear often about agents: that the fastest way to improve
 one is not a better model but a better loop around it. The measurements here
 support it — and then sharpen it into something less comfortable.
 
+*(For a treatment of the same ground from inside Anthropic, see Daisy Hollman,
+[How Anthropic uses Claude Code: Agentic Software Engineering at
+Scale](https://www.youtube.com/watch?v=shZgedW15vg). The wording above is the
+form the claim circulates in and is not a quotation from that talk.)*
+
 **Every harness win in this repo is the removal of a total failure, not an
 improvement.** Four of them, all large:
 
