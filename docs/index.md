@@ -37,6 +37,8 @@ tests pass.**
 
 ## The short version
 
+### The original round: seven models, opencode, one run each
+
 | Model | Type | Weights | Hidden tests | Wall clock | Tool calls | Own tests written |
 |---|---|---|---|---|---|---|
 | **DeepSeek-V4-Flash** | MoE | 88 GB | **86 / 86** | **25:49** | 57 | 73 |
@@ -59,12 +61,14 @@ Three models scored perfectly. The interesting column is wall clock: the dense
 27B needed **7.3× longer than DeepSeek** for the exact same result. That gap is
 not a software problem and it is not tunable. See below.
 
-### Two more, measured with the Java harness
+### Added later: two models, Java harness
 
-These were added after the opencode round and run with
-[jaja](https://github.com/DG1001/jaja) instead, so they belong in their own
-table — mixing harnesses in one ranking is how the speed column went wrong
-earlier.
+**Qwen3.8-27B is not missing from the table above — it was never run under
+opencode.** It and Qwen3.6-35B-A3B at NVFP4 came later and were measured with
+[jaja](https://github.com/DG1001/jaja), so they get their own table. Mixing
+harnesses inside one ranking is exactly how the speed column went wrong earlier
+in this repo, and wall clock and tool counts are not comparable across
+harnesses either.
 
 | Model | Type | Weights | Hidden tests | Wall clock | Generation |
 |---|---|---|---|---|---|

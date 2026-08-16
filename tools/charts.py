@@ -188,6 +188,8 @@ def streu(punkte_daten, titel, untertitel, datei, breite=760, hoehe=430):
              f'fill="{ACHSE}">end-to-end tokens/s (~16,850 input tokens)</text>')
     s.append(f'<text x="12" y="{oben-14}" font-size="11" fill="{ACHSE}">hidden tests passed</text>')
 
+    # Erst alle Balken und Punkte, dann die Beschriftungen -- sonst verdeckt
+    # eine spaeter gezeichnete Marke einen frueher gesetzten Text.
     for name, x, werte, farbe, dx, dy in punkte_daten:
         if len(werte) > 1:
             s.append(f'<line x1="{fx(x):.1f}" y1="{fy(min(werte)):.1f}" '
@@ -196,8 +198,18 @@ def streu(punkte_daten, titel, untertitel, datei, breite=760, hoehe=430):
         for w in werte:
             s.append(f'<circle cx="{fx(x):.1f}" cy="{fy(w):.1f}" r="4.5" fill="{farbe}" '
                      f'opacity="0.9"/>')
-        oberster = max(werte)
-        s.append(f'<text x="{fx(x)+dx:.1f}" y="{fy(oberster)+dy:.1f}" font-size="10.5" '
+    for name, x, werte, farbe, dx, dy in punkte_daten:
+        px, py = fx(x), fy(max(werte))
+        tx, ty = px + dx, py + dy
+        anker = "end" if dx < -8 else "start"
+        # Fuehrungslinie, sobald die Beschriftung nicht mehr direkt am Punkt
+        # klebt: drei Konfigurationen liegen bei 86 auf 21 Pixeln beieinander,
+        # da muessen die Texte auseinander und der Bezug sichtbar bleiben.
+        if abs(dx) > 26 or abs(dy) > 14:
+            zx = tx + (4 if anker == "start" else -4)
+            s.append(f'<line x1="{px:.1f}" y1="{py:.1f}" x2="{zx:.1f}" y2="{ty - 3:.1f}" '
+                     f'stroke="{ACHSE}" stroke-width="0.6" opacity="0.45"/>')
+        s.append(f'<text x="{tx:.1f}" y="{ty:.1f}" font-size="10.5" text-anchor="{anker}" '
                  f'fill="{TEXT}">{name}</text>')
     s.append('</svg>')
     (ZIEL / datei).write_text("\n".join(s) + "\n")
@@ -239,16 +251,18 @@ def main():
     # Punkt, nicht an den ohne.
     spec = [85] + ab["ohne"] + ab["mit"]
     daten = [
-        ("Nemotron + DSpark · 11 runs", d["nemotronspec"]["end_to_end_tok_s"], spec, WARN, -132, -12),
-        ("Qwen3.6-35B-A3B NVFP4 · 2", d["qwen36nvfp4"]["end_to_end_tok_s"], [64, 67], BETONT, 10, 2),
-        ("Nemotron · 2 runs", d["nemotron"]["end_to_end_tok_s"], [63, 64], WARN, 10, 4),
-        ("Qwen3.6-35B-A3B FP8", d["qwen36moe"]["end_to_end_tok_s"], [68], BALKEN, 10, 4),
-        ("AgentWorld", d["agentworld"]["end_to_end_tok_s"], [80], BALKEN, 8, -8),
-        ("KAT-Coder", d["kat"]["end_to_end_tok_s"], [84], BALKEN, -20, -10),
-        ("Laguna", d["laguna"]["end_to_end_tok_s"], [86], BALKEN, 6, -8),
-        ("Qwen3.8-27B dense", d["qwen38"]["end_to_end_tok_s"], [86], BETONT, -20, 16),
-        ("DeepSeek-V4-Flash", d["ds4"]["end_to_end_tok_s"], [86], BALKEN, -34, -10),
-        ("Qwen3.6-27B dense", d["qwen27b"]["end_to_end_tok_s"], [86], BALKEN, 6, 16),
+        ("Nemotron + DSpark · 11 runs", d["nemotronspec"]["end_to_end_tok_s"], spec, WARN, -10, -10),
+        ("Qwen3.6-35B-A3B NVFP4 · 2 runs", d["qwen36nvfp4"]["end_to_end_tok_s"], [64, 67], BETONT, 9, -9),
+        ("Nemotron · 2 runs", d["nemotron"]["end_to_end_tok_s"], [63, 64], WARN, 9, 14),
+        ("Qwen3.6-35B-A3B FP8", d["qwen36moe"]["end_to_end_tok_s"], [68], BALKEN, 9, 4),
+        ("AgentWorld", d["agentworld"]["end_to_end_tok_s"], [80], BALKEN, 9, 4),
+        ("KAT-Coder", d["kat"]["end_to_end_tok_s"], [84], BALKEN, 9, -7),
+        # Drei Konfigurationen bei 86 auf 21 Pixeln: gestaffelt nach unten links,
+        # jede mit Fuehrungslinie.
+        ("Laguna", d["laguna"]["end_to_end_tok_s"], [86], BALKEN, 9, -9),
+        ("Qwen3.8-27B dense", d["qwen38"]["end_to_end_tok_s"], [86], BETONT, -12, 24),
+        ("DeepSeek-V4-Flash", d["ds4"]["end_to_end_tok_s"], [86], BALKEN, -14, 44),
+        ("Qwen3.6-27B dense", d["qwen27b"]["end_to_end_tok_s"], [86], BALKEN, 9, -9),
     ]
     p = streu(daten, "What a score costs in speed",
               "vertical bars are repeated runs of one configuration, not error bars",
