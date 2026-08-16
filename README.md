@@ -299,7 +299,9 @@ results/
                           (including all three Nemotron runs)
 tools/
   model-switch            starts exactly one model, stops the others
-  charts.py            regenerates docs/charts/*.svg from results/*.json
+  charts.py               regenerates docs/charts/*.svg from results/*.json
+  pruefe-seeds.sh         checks the published task seeds still match the
+                          working copy the runs are measured from
   cc-local                launches Claude Code against a local model
 configs/
   opencode.json           the seven providers as configured
