@@ -42,8 +42,14 @@ tests pass.**
 | **Qwen3.6-27B** | dense | 52 GB | **86 / 86** | **3:07:36** | 67 | 118 |
 | KAT-Coder-V2.5-Dev | MoE | 65 GB | 84 / 86 | 25:59 | 169 | 79 |
 | Qwen-AgentWorld-35B-A3B | MoE | 65 GB | 80 / 86 | 41:34 | 120 | 66 |
-| Qwen3.6-35B-A3B | MoE | 35 GB | 68 / 86 | 44:30 | 116 | 125 |
+| **Qwen3.6-35B-A3B** (NVFP4) | MoE | 23 GB | **86 / 86** | **21:01** | 61 | 132 |
+| **Qwen3.8-27B** (NVFP4 + MTP) | dense | 22 GB | **86 / 86** | >1:47 ‡ | 74 | 118 |
+| Qwen3.6-35B-A3B (FP8) | MoE | 35 GB | 68 / 86 | 44:30 | 116 | 125 |
 | Nemotron-3.5-Lightning-30B-A3B | MoE | 21 GB | 63–85 / 86 † | 36:29 | 220 | 54 |
+
+‡ `t3-neubau` ran into the 90-minute cap with the work already finished — the
+hidden suite passed 33/33 against what was on disk. That wall clock is a floor,
+not a measurement, so the total is not comparable with the other rows.
 
 † **Not a typo, and the most important number in this table.** Nemotron has
 since been run **thirteen** times on the identical tasks, scoring anywhere from
@@ -57,38 +63,26 @@ Three models scored perfectly. The interesting column is wall clock: the dense
 27B needed **7.3× longer than DeepSeek** for the exact same result. That gap is
 not a software problem and it is not tunable. See below.
 
-### Added later: two models, Java harness
+### The same model at two precisions
 
-**Qwen3.8-27B is not missing from the table above — it was never run under
-opencode.** It and Qwen3.6-35B-A3B at NVFP4 came later and were measured with
-[jaja](https://github.com/DG1001/jaja), so they get their own table. Mixing
-harnesses inside one ranking is exactly how the speed column went wrong earlier
-in this repo, and wall clock and tool counts are not comparable across
-harnesses either.
+Qwen3.6-35B-A3B is the one model here measured twice at different precision
+under the same harness, and the result is a warning rather than a finding:
 
-| Model | Type | Weights | Hidden tests | Wall clock | Generation |
-|---|---|---|---|---|---|
-| **Qwen3.8-27B** (NVFP4 + MTP) | dense | 22 GB | **86 / 86** | 54:03 | 24.8 tok/s |
-| Qwen3.6-35B-A3B (NVFP4) | MoE | 23 GB | 64 and 67 / 86 | 14:08 / 24:39 | 78.3 tok/s |
+| | Hidden tests | Wall clock | Generation |
+|---|---|---|---|
+| FP8 (35 GB) | 68 / 86 | 44:30 | 50.0 tok/s |
+| **NVFP4 (23 GB)** | **86 / 86** | **21:01** | 78.3 tok/s |
 
-**Qwen3.8-27B is the first model to get `t2-refactor` right at the first
-attempt** after four others failed it, and the fourth to reach 86/86. It is
-also the answer to a question this repo raised and could not answer: a dense
-27B at 4 bits with the model's own multi-token prediction runs at 24.8 tok/s
-against 4.4 for the BF16 dense model — 5.6× — which turns "impractical" into
-"slow but usable". The bill still arrives: `t3-neubau`, which writes a lot of
-files, took 42 minutes against 5 for Nemotron with DSpark.
+The more aggressively quantized build scores *higher* and runs twice as fast.
+That does not make 4 bits better than 8. **The entire difference is one task**,
+`t2-refactor`, of which this model has now produced **0, 16, 0 and 17** across
+four runs. The FP8 run drew a zero and this one a seventeen. Two single runs,
+one confound removed, and the number still says nothing about precision — which
+is the whole argument of [one run is not a
+measurement](docs/variance.md#one-run-is-not-a-measurement) in one table.
 
-**Qwen3.6-35B-A3B in NVFP4 is the only same-model, two-precision comparison
-here.** Against its FP8 sibling it is **1.57× faster** (78.3 against 50.0
-tok/s) and scores in the same band (64 and 67 against 68). No quality cost from
-4-bit is visible — with the caveat that the FP8 number is one opencode run and
-these are two Java-harness runs.
-
-Its two runs also disagree by themselves: `t2-refactor` went **16/17 to 0/17**
-between them. And run 1's `t4` was [a harness gap, not a model
-result](docs/variance.md#one-run-is-not-a-measurement) — the model answered with
-four tokens, called no tool, and was accepted as finished.
+What the pair does support is the throughput claim: 1.57× from halving the
+bytes per weight, measured on identical hardware and software.
 
 ### What a score costs in speed
 
@@ -97,21 +91,26 @@ four tokens, called no tool, and was accepted as finished.
 Everything above is in this one picture: score up, throughput right, and a
 vertical bar wherever the same configuration was run more than once.
 
-**The fastest route to 86/86 is Laguna-S-2.1, at 19.5 end-to-end tokens per
-second.** Nothing faster than that has ever reached full marks here. DeepSeek
-and Qwen3.8-27B sit beside it at 16.5 and 17.5; the dense BF16 27B gets there
-too, at 4.1, which is why it is in the table and not in anyone's editor.
+**Qwen3.6-35B-A3B at NVFP4 holds both ends: 86/86 in 21:01, at 57.9 end-to-end
+tokens per second.** That is the fastest perfect run here — DeepSeek needs
+25:49 at 16.5 tok/s, Laguna 30:56 at 19.5 — and it is three times further right
+than either.
 
-To the right of them the picture falls apart rather than improving. Nemotron
-with DSpark runs **5× faster than Laguna** and has scored anywhere from 47 to
-85 across eleven runs — the tall bar is not an error bar, it is eleven actual
-results. Qwen3.6-35B-A3B at NVFP4 is three times faster than Laguna and has yet
-to break 70.
+> **This replaces an earlier reading of the same chart.** Before that run, the
+> four configurations at 86/86 all sat at 19.5 tok/s or below, and this section
+> said nothing faster had ever reached full marks — that past some point the
+> trade becomes speed against knowing what you will get. One run moved the
+> frontier by a factor of three and the sentence did not survive it. A boundary
+> drawn through the fastest point you happen to have measured is a statement
+> about your sample, not about the machine.
 
-So the trade is not "speed against a few points". On these four tasks it is
-**speed against knowing what you will get.** If that changes with a better
-harness, a bigger turn budget or simply more runs, this chart is where it will
-show up first.
+What does survive is the shape of the bars. Nemotron with DSpark is the fastest
+configuration on the chart and has scored anywhere from 47 to 85 across eleven
+runs — that tall bar is not an error bar, it is eleven actual results. The same
+Qwen3.6-35B-A3B that reached 86 also produced 64 and 67 on two earlier runs.
+**Being fast does not cost you points; it does not buy you consistency
+either.** The vertical extent of a bar, not its position, is what should decide
+whether you would rely on a configuration.
 
 ## Hardware
 

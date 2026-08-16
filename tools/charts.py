@@ -252,7 +252,7 @@ def main():
     spec = [85] + ab["ohne"] + ab["mit"]
     daten = [
         ("Nemotron + DSpark · 11 runs", d["nemotronspec"]["end_to_end_tok_s"], spec, WARN, -10, -10),
-        ("Qwen3.6-35B-A3B NVFP4 · 2 runs", d["qwen36nvfp4"]["end_to_end_tok_s"], [64, 67], BETONT, 9, -9),
+        ("Qwen3.6-35B-A3B NVFP4 · 3 runs", d["qwen36nvfp4"]["end_to_end_tok_s"], [64, 67, 86], BETONT, -14, 22),
         ("Nemotron · 2 runs", d["nemotron"]["end_to_end_tok_s"], [63, 64], WARN, 9, 14),
         ("Qwen3.6-35B-A3B FP8", d["qwen36moe"]["end_to_end_tok_s"], [68], BALKEN, 9, 4),
         ("AgentWorld", d["agentworld"]["end_to_end_tok_s"], [80], BALKEN, 9, 4),
@@ -260,7 +260,7 @@ def main():
         # Drei Konfigurationen bei 86 auf 21 Pixeln: gestaffelt nach unten links,
         # jede mit Fuehrungslinie.
         ("Laguna", d["laguna"]["end_to_end_tok_s"], [86], BALKEN, 9, -9),
-        ("Qwen3.8-27B dense", d["qwen38"]["end_to_end_tok_s"], [86], BETONT, -12, 24),
+        ("Qwen3.8-27B dense · 2 runs", d["qwen38"]["end_to_end_tok_s"], [86, 86], BETONT, -12, 24),
         ("DeepSeek-V4-Flash", d["ds4"]["end_to_end_tok_s"], [86], BALKEN, -14, 44),
         ("Qwen3.6-27B dense", d["qwen27b"]["end_to_end_tok_s"], [86], BALKEN, 9, -9),
     ]

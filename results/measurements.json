@@ -395,5 +395,119 @@
     "total_tool_calls": 116,
     "total_pytest_runs": 18,
     "total_own_tests": 125
+  },
+  "qwen38": {
+    "name": "Qwen3.8-27B",
+    "architecture": "dense, 27B all active",
+    "precision": "NVFP4 + MTP",
+    "weights_gb_on_disk": 22,
+    "engine": "vLLM 0.27.1, MTP speculative decoding, native context (no YaRN)",
+    "note": "t3-neubau hit the 90-minute cap with the work already complete — the hidden suite passed 33/33 against what was on disk. Its wall clock is a floor, not a measurement, and the run total is therefore not comparable with the others.",
+    "tasks": {
+      "t1-debug": {
+        "seconds": 137,
+        "exit_code": 0,
+        "hidden_passed": 15,
+        "hidden_total": 15,
+        "read_search_calls": 3,
+        "all_tool_calls": 13,
+        "pytest_runs": 1,
+        "own_tests_passing": 0
+      },
+      "t2-refactor": {
+        "seconds": 222,
+        "exit_code": 0,
+        "hidden_passed": 17,
+        "hidden_total": 17,
+        "read_search_calls": 1,
+        "all_tool_calls": 10,
+        "pytest_runs": 1,
+        "own_tests_passing": 0
+      },
+      "t3-neubau": {
+        "seconds": 5400,
+        "exit_code": 124,
+        "hidden_passed": 33,
+        "hidden_total": 33,
+        "read_search_calls": 13,
+        "all_tool_calls": 81,
+        "pytest_runs": 2,
+        "own_tests_passing": 0
+      },
+      "t4-feature": {
+        "seconds": 675,
+        "exit_code": 0,
+        "hidden_passed": 21,
+        "hidden_total": 21,
+        "read_search_calls": 7,
+        "all_tool_calls": 33,
+        "pytest_runs": 4,
+        "own_tests_passing": 0
+      }
+    },
+    "total_seconds": 6434,
+    "total_hidden_passed": 86,
+    "total_hidden": 86,
+    "total_read_search_calls": 24,
+    "total_tool_calls": 137,
+    "total_pytest_runs": 8,
+    "total_own_tests": 0
+  },
+  "qwen36nvfp4": {
+    "name": "Qwen3.6-35B-A3B (NVFP4)",
+    "architecture": "MoE, 35B total / 3B active",
+    "precision": "NVFP4",
+    "weights_gb_on_disk": 23,
+    "engine": "vLLM 0.26.0, --language-model-only",
+    "note": "Fastest perfect run in the collection: 86/86 in 21:01, against DeepSeek at 25:49 and Laguna at 30:56. Same model as qwen36moe at a different precision and the same harness — the FP8 build scored 68/86. The whole difference is t2-refactor, of which this model has now produced 0, 16, 0 and 17 across four runs; the FP8 run drew a zero and this one a seventeen.",
+    "tasks": {
+      "t1-debug": {
+        "seconds": 138,
+        "exit_code": 0,
+        "hidden_passed": 15,
+        "hidden_total": 15,
+        "read_search_calls": 5,
+        "all_tool_calls": 17,
+        "pytest_runs": 2,
+        "own_tests_passing": 0
+      },
+      "t2-refactor": {
+        "seconds": 176,
+        "exit_code": 0,
+        "hidden_passed": 17,
+        "hidden_total": 17,
+        "read_search_calls": 7,
+        "all_tool_calls": 20,
+        "pytest_runs": 3,
+        "own_tests_passing": 0
+      },
+      "t3-neubau": {
+        "seconds": 544,
+        "exit_code": 0,
+        "hidden_passed": 33,
+        "hidden_total": 33,
+        "read_search_calls": 3,
+        "all_tool_calls": 37,
+        "pytest_runs": 8,
+        "own_tests_passing": 0
+      },
+      "t4-feature": {
+        "seconds": 403,
+        "exit_code": 0,
+        "hidden_passed": 21,
+        "hidden_total": 21,
+        "read_search_calls": 8,
+        "all_tool_calls": 25,
+        "pytest_runs": 2,
+        "own_tests_passing": 0
+      }
+    },
+    "total_seconds": 1261,
+    "total_hidden_passed": 86,
+    "total_hidden": 86,
+    "total_read_search_calls": 23,
+    "total_tool_calls": 99,
+    "total_pytest_runs": 15,
+    "total_own_tests": 0
   }
 }

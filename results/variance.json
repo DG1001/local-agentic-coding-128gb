@@ -91,12 +91,23 @@
       "note": "three harness/engine configurations plus the ten-run Abgleich series"
     },
     "Qwen3.6-35B-A3B (NVFP4)": {
-      "runs": 2,
+      "runs": 3,
       "scores": [
         64,
-        67
+        67,
+        86
       ],
-      "note": "Same model, same quantisation, same harness, back to back. t2-refactor went 16/17 to 0/17 between the two; run 1 also lost t4 to a harness gap, so its real figure is 64 of 65 attempted."
+      "note": "Two Java-harness runs and one opencode run, same model, same quantisation. t2-refactor came out 16/17, 0/17 and 17/17. The opencode run is the fastest perfect run in the collection at 21:01."
+    },
+    "Qwen3.6-35B-A3B (FP8 vs NVFP4)": {
+      "runs": 4,
+      "scores": [
+        68,
+        64,
+        67,
+        86
+      ],
+      "note": "Same model, two precisions, two harnesses. t2-refactor across the four: 0, 16, 0, 17. Any claim about what quantisation costs can be supported or refuted here by choosing which runs to quote."
     }
   }
 }
