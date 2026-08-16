@@ -174,16 +174,31 @@ those low scores before repetition showed all three were wrong.
 → [**One run is not a measurement**](variance.md) — the three explanations,
 why each failed, and what in this repo is *not* affected by it.
 
-### 3. The harness changes correctness, not just speed
+### 3. The loop decides whether you get what the model can do
 
 Same model, same tasks, same limits — swapping opencode for Oh My Pi recovers
 seven points across three named defects. Claude Code scores 9/86 on a
 65K-context model because its own baseline footprint will not fit, and every
 task dies in compaction thrashing.
 
-→ [**The harness matters as much as the model**](harness.md) — including a
-purpose-built Java harness written to test one claim, and what its tool set is
-worth measured.
+There is a popular version of this: that the fastest way to improve an agent is
+a better loop rather than a better model. The measurements here support it and
+then narrow it. **Every harness win in this repo is the removal of a total
+failure** — a turn that ended without acting, a compaction that discarded
+finished work, a turn budget that cut mid-task, a four-token answer accepted as
+a completed run. None of them made a good run better; each stopped a good run
+from being thrown away.
+
+And the one deliberate attempt to *add* points with a better loop measured
+nothing. Asking the model to walk the task statement before finishing produced
+**no further tool call at all in four of six cases** — it confirmed its own
+requirements in prose, once while a broken import sat in the file. A model that
+believes it is finished will say so when asked; checking needs an observation,
+not a question.
+
+→ [**What the harness is actually worth**](harness.md#what-the-harness-is-actually-worth)
+— the four failures it removed, the one improvement it did not deliver, and a
+purpose-built Java harness written to test a claim.
 
 ### 4. Green tests are not acceptance
 

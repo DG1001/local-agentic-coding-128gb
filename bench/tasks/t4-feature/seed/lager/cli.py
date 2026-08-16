@@ -4,7 +4,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from .artikel import LagerFehler
+from .artikel import LagerFehler, UnbekannteReservierung
 from .bestand import Lager
 
 
@@ -28,6 +28,20 @@ def main(argv: list[str] | None = None) -> int:
 
     unter.add_parser("liste")
 
+    # Neue Befehle
+    r = unter.add_parser("reservieren")
+    r.add_argument("nummer")
+    r.add_argument("menge", type=int)
+    r.add_argument("auftrag")
+
+    f = unter.add_parser("freigeben")
+    f.add_argument("nummer")
+    f.add_argument("auftrag")
+
+    ent = unter.add_parser("entnehmen")
+    ent.add_argument("nummer")
+    ent.add_argument("auftrag")
+
     args = p.parse_args(argv)
     lager = Lager(args.datei)
 
@@ -38,9 +52,20 @@ def main(argv: list[str] | None = None) -> int:
             lager.einlagern(args.nummer, args.menge)
         elif args.befehl == "auslagern":
             lager.auslagern(args.nummer, args.menge)
+        elif args.befehl == "reservieren":
+            result = lager.reservieren(args.nummer, args.menge, args.auftrag)
+            print(result)
+        elif args.befehl == "freigeben":
+            result = lager.freigeben(args.nummer, args.auftrag)
+            print(result)
+        elif args.befehl == "entnehmen":
+            result = lager.entnehmen(args.nummer, args.auftrag)
+            print(result)
         elif args.befehl == "liste":
             for art in lager.liste():
-                print(f"{art.nummer}\t{art.name}\t{art.menge}")
+                r = lager.reserviert(art.nummer)
+                v = lager.verfuegbar(art.nummer)
+                print(f"{art.nummer}\t{art.name}\t{art.menge}\t{r}\t{v}")
     except (LagerFehler, ValueError) as fehler:
         print(f"Fehler: {fehler}", file=sys.stderr)
         return 2

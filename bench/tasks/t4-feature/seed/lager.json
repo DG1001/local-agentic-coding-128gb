@@ -1,0 +1,17 @@
+{
+  "version": 2,
+  "artikel": [
+    {
+      "nummer": "A1",
+      "name": "Testartikel",
+      "menge": 7
+    }
+  ],
+  "reservierungen": [
+    {
+      "nummer": "A1",
+      "auftrag": "auftrag-42",
+      "menge": 5
+    }
+  ]
+}

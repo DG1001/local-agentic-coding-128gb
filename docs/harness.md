@@ -46,7 +46,60 @@ where a model reasons at length. (That model went on to fail the same task in a
 harness that never compacts, so the compaction cost it work, not the score —
 read the section before quoting it.)
 
-### The surprise: the harness changes *correctness*, not just speed
+## What the harness is actually worth
+
+There is a claim you hear often about agents: that the fastest way to improve
+one is not a better model but a better loop around it. The measurements here
+support it — and then sharpen it into something less comfortable.
+
+**Every harness win in this repo is the removal of a total failure, not an
+improvement.** Four of them, all large:
+
+| What happened | Cost | Fixed by |
+|---|---|---|
+| A turn hit the output cap with no tool call and was treated as finished | 33 points, 683 s, zero files written | retrying with a nudge to act |
+| Compaction summarised away the fact that the work was already done | a solved task thrown out and rebuilt from scratch | not compacting |
+| The turn budget cut mid-task | `t4-feature` at 18–20 instead of 21/21 | raising 80 to 200 |
+| A four-token answer with no tool call was accepted as a finished run | 21 points in one second | nudging when a run ends with zero tool calls |
+
+None of these made a good run better. Each stopped a good run from being
+discarded. That is worth a great deal — Claude Code scores 9/86 against
+opencode's 86/86 on the same model for exactly this reason — but it is a
+different claim from "a better loop gets you more".
+
+**The one deliberate attempt to add points with a better loop measured
+nothing.** `--abgleich` asks the model, before it may finish, to walk the task
+statement sentence by sentence and say for each requirement whether it is met
+and where. It is the obvious fix for the dominant failure in this benchmark:
+models that build something working instead of what was asked. Thirteen runs
+later there is no effect — and the logs say why:
+
+```
+ab200-mit-r1   t2:  0 tool calls after the check
+               t3:  0
+               t4:  0
+```
+
+In four of six cases the question produced no further action at all. The model
+ticked the requirements off in prose and stopped. In one of those runs it
+confirmed its requirements while `from typing import dict` sat in the file,
+breaking every import — its own tests could not collect either.
+
+**A model that believes it is finished will confirm that belief when asked.**
+The check enquired about beliefs where it needed observations. "Walk the
+requirements" is a question; "run the tests and show me the output" is a tool
+call. The next version has to demand the second.
+
+So the sharper version of the claim, and the one this repo can actually
+support: **the loop decides whether you get what the model can do. It does not
+decide what the model can do.** Nothing in the harness moves 4.4 tokens per
+second, or Nemotron's 38-point spread across thirteen runs at an unchanged
+harness, or four models missing the same import path in four different ways.
+
+(The claim usually extends to orchestration graphs as well. Nothing here tests
+that — every run in this repo is a single agent in a single loop.)
+
+## The surprise: the harness changes *correctness*, not just speed
 
 Running all four models through Oh My Pi as well turned the speed comparison
 into something more interesting.
