@@ -33,6 +33,3 @@ class UnbekannterArtikel(LagerFehler):
 
 class ZuWenigBestand(LagerFehler):
     """Es ist nicht genug vorhanden."""
-class UnbekannteReservierung(LagerFehler):
-    """Es gibt keine Reservierung fuer diesen Auftrag."""
-
