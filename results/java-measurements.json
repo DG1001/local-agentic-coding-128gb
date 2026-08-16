@@ -241,6 +241,202 @@
         "t3-neubau": 73,
         "t4-feature": 69
       }
+    },
+    {
+      "model": "Qwen3.8-27B (dense, NVFP4 + MTP)",
+      "context_window": 131072,
+      "max_output": 32768,
+      "engine": "vLLM 0.27.1, MTP speculative decoding, native context (no YaRN)",
+      "note": "Fourth model to reach 86/86, and the first to get t2-refactor right in one attempt after three others failed it. The price is t3-neubau at 2526 s — six times Nemotron with DSpark on the same task, because a dense model at 24.8 tok/s pays for every token it writes.",
+      "tasks": [
+        {
+          "task": "t1-debug",
+          "seconds": 169,
+          "exit_code": 0,
+          "hidden_passed": 15,
+          "hidden_total": 15,
+          "turns": 17,
+          "tool_calls": 22,
+          "own_tests": "9 passed in 0.00s"
+        },
+        {
+          "task": "t2-refactor",
+          "seconds": 181,
+          "exit_code": 0,
+          "hidden_passed": 17,
+          "hidden_total": 17,
+          "turns": 11,
+          "tool_calls": 16,
+          "own_tests": "18 passed in 0.01s"
+        },
+        {
+          "task": "t3-neubau",
+          "seconds": 2526,
+          "exit_code": 0,
+          "hidden_passed": 33,
+          "hidden_total": 33,
+          "turns": 62,
+          "tool_calls": 78,
+          "own_tests": "59 passed in 0.11s"
+        },
+        {
+          "task": "t4-feature",
+          "seconds": 367,
+          "exit_code": 0,
+          "hidden_passed": 21,
+          "hidden_total": 21,
+          "turns": 19,
+          "tool_calls": 23,
+          "own_tests": "23 passed in 0.01s"
+        }
+      ],
+      "total_hidden_passed": 86,
+      "total_hidden": 86,
+      "total_seconds": 3243,
+      "tool_usage": {
+        "bash": 43,
+        "read": 25,
+        "edit": 46,
+        "write": 22,
+        "grep": 3
+      },
+      "turns_per_task": {
+        "t1-debug": 17,
+        "t2-refactor": 11,
+        "t3-neubau": 62,
+        "t4-feature": 19
+      }
+    },
+    {
+      "model": "Qwen3.6-35B-A3B (NVFP4) — run 1",
+      "context_window": 131072,
+      "max_output": 32768,
+      "engine": "vLLM 0.26.0, --language-model-only",
+      "note": "t4-feature is NOT a model result: the model answered the first turn with four tokens (\"[README]\"), called no tool, and the harness accepted that as finished on an untouched directory. Read this run as 64 of 65 attempted points. jaja now nudges once when a run would end with zero tool calls.",
+      "tasks": [
+        {
+          "task": "t1-debug",
+          "seconds": 75,
+          "exit_code": 0,
+          "hidden_passed": 15,
+          "hidden_total": 15,
+          "turns": 17,
+          "tool_calls": 18,
+          "own_tests": "9 passed in 0.00s"
+        },
+        {
+          "task": "t2-refactor",
+          "seconds": 112,
+          "exit_code": 0,
+          "hidden_passed": 16,
+          "hidden_total": 17,
+          "turns": 21,
+          "tool_calls": 26,
+          "own_tests": "23 passed in 0.01s"
+        },
+        {
+          "task": "t3-neubau",
+          "seconds": 660,
+          "exit_code": 0,
+          "hidden_passed": 33,
+          "hidden_total": 33,
+          "turns": 65,
+          "tool_calls": 64,
+          "own_tests": "76 passed in 0.13s"
+        },
+        {
+          "task": "t4-feature",
+          "seconds": 1,
+          "exit_code": 0,
+          "hidden_passed": 0,
+          "hidden_total": 21,
+          "turns": 1,
+          "tool_calls": 0,
+          "own_tests": "7 passed in 0.01s"
+        }
+      ],
+      "total_hidden_passed": 64,
+      "total_hidden": 86,
+      "total_seconds": 848,
+      "tool_usage": {
+        "glob": 4,
+        "read": 15,
+        "bash": 56,
+        "edit": 13,
+        "write": 20
+      },
+      "turns_per_task": {
+        "t1-debug": 17,
+        "t2-refactor": 21,
+        "t3-neubau": 65,
+        "t4-feature": 1
+      }
+    },
+    {
+      "model": "Qwen3.6-35B-A3B (NVFP4) — run 2",
+      "context_window": 131072,
+      "max_output": 32768,
+      "engine": "vLLM 0.26.0, --language-model-only",
+      "note": "Same model, same quantisation, same harness as run 1 — and t2-refactor went 16/17 to 0/17 between them, by placing STANDARD in __init__.py instead of einheiten.py. 24 self-written tests green.",
+      "tasks": [
+        {
+          "task": "t1-debug",
+          "seconds": 60,
+          "exit_code": 0,
+          "hidden_passed": 15,
+          "hidden_total": 15,
+          "turns": 19,
+          "tool_calls": 19,
+          "own_tests": "9 passed in 0.00s"
+        },
+        {
+          "task": "t2-refactor",
+          "seconds": 164,
+          "exit_code": 0,
+          "hidden_passed": 0,
+          "hidden_total": 17,
+          "turns": 33,
+          "tool_calls": 41,
+          "own_tests": "24 passed in 0.01s"
+        },
+        {
+          "task": "t3-neubau",
+          "seconds": 844,
+          "exit_code": 0,
+          "hidden_passed": 33,
+          "hidden_total": 33,
+          "turns": 61,
+          "tool_calls": 60,
+          "own_tests": "61 passed in 0.06s"
+        },
+        {
+          "task": "t4-feature",
+          "seconds": 411,
+          "exit_code": 0,
+          "hidden_passed": 19,
+          "hidden_total": 21,
+          "turns": 38,
+          "tool_calls": 43,
+          "own_tests": "32 passed in 0.03s"
+        }
+      ],
+      "total_hidden_passed": 67,
+      "total_hidden": 86,
+      "total_seconds": 1479,
+      "tool_usage": {
+        "bash": 72,
+        "read": 29,
+        "edit": 28,
+        "glob": 8,
+        "write": 25,
+        "grep": 1
+      },
+      "turns_per_task": {
+        "t1-debug": 19,
+        "t2-refactor": 33,
+        "t3-neubau": 61,
+        "t4-feature": 38
+      }
     }
   ],
   "earlier_revision_read_bash_only": {

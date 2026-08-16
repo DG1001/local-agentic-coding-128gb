@@ -47,17 +47,48 @@ tests pass.**
 | Qwen3.6-35B-A3B | MoE | 35 GB | 68 / 86 | 44:30 | 116 | 125 |
 | Nemotron-3.5-Lightning-30B-A3B | MoE | 21 GB | 63–85 / 86 † | 36:29 | 220 | 54 |
 
-† **Not a typo, and the most important number in this table.** Nemotron is the
-only model here that was run more than once. Three runs on the identical tasks
-at identical limits produced 63/86, 64/86 and 85/86 — a 22-point spread that is
-**wider than the gap between first and last place in this table**, every other
-row of which is a single run. Details in [one run is not a
+† **Not a typo, and the most important number in this table.** Nemotron has
+since been run **thirteen** times on the identical tasks, scoring anywhere from
+47 to 85 — a 38-point spread, **wider than the whole field above**, every other
+row of which is a single run. A second model repeated twice swung a full task
+(16/17 to 0/17) between consecutive runs. Details in [one run is not a
 measurement](variance.md#one-run-is-not-a-measurement). Read the ranking accordingly: it
 separates "solves this class of task" from "does not", and nothing finer.
 
 Three models scored perfectly. The interesting column is wall clock: the dense
 27B needed **7.3× longer than DeepSeek** for the exact same result. That gap is
 not a software problem and it is not tunable. See below.
+
+### Two more, measured with the Java harness
+
+These were added after the opencode round and run with
+[jaja](https://github.com/DG1001/jaja) instead, so they belong in their own
+table — mixing harnesses in one ranking is how the speed column went wrong
+earlier.
+
+| Model | Type | Weights | Hidden tests | Wall clock | Generation |
+|---|---|---|---|---|---|
+| **Qwen3.8-27B** (NVFP4 + MTP) | dense | 22 GB | **86 / 86** | 54:03 | 24.8 tok/s |
+| Qwen3.6-35B-A3B (NVFP4) | MoE | 23 GB | 64 and 67 / 86 | 14:08 / 24:39 | 78.3 tok/s |
+
+**Qwen3.8-27B is the first model to get `t2-refactor` right at the first
+attempt** after four others failed it, and the fourth to reach 86/86. It is
+also the answer to a question this repo raised and could not answer: a dense
+27B at 4 bits with the model's own multi-token prediction runs at 24.8 tok/s
+against 4.4 for the BF16 dense model — 5.6× — which turns "impractical" into
+"slow but usable". The bill still arrives: `t3-neubau`, which writes a lot of
+files, took 42 minutes against 5 for Nemotron with DSpark.
+
+**Qwen3.6-35B-A3B in NVFP4 is the only same-model, two-precision comparison
+here.** Against its FP8 sibling it is **1.57× faster** (78.3 against 50.0
+tok/s) and scores in the same band (64 and 67 against 68). No quality cost from
+4-bit is visible — with the caveat that the FP8 number is one opencode run and
+these are two Java-harness runs.
+
+Its two runs also disagree by themselves: `t2-refactor` went **16/17 to 0/17**
+between them. And run 1's `t4` was [a harness gap, not a model
+result](variance.md#one-run-is-not-a-measurement) — the model answered with
+four tokens, called no tool, and was accepted as finished.
 
 ## Hardware
 
@@ -102,9 +133,10 @@ correction to an earlier version of this table.
 
 ### 2. One run is not a measurement — and this is the big one
 
-Every row of the summary table is a single run. Nemotron is the only model that
-was run repeatedly, thirteen times on the identical tasks. **Those thirteen runs
-span 38 points. The seven different models span 23.**
+Every row of the summary table is a single run. Two models have since been run
+repeatedly: Nemotron thirteen times, Qwen3.6-35B-A3B twice. **Nemotron's thirteen
+runs span 38 points. The seven different models span 23.** Qwen's two runs
+disagree by a whole task.
 
 ![Score spread across repeated runs](charts/variance.svg)
 
@@ -176,7 +208,9 @@ Read the numbers with these in mind:
 - **Quantization differs across models** (GGUF IQ2_XXS-based mixed for
   DeepSeek, NVFP4 for Laguna, BF16 for the three Qwen-family models). This is
   a comparison of *usable local setups*, not of model weights under equal
-  conditions.
+  conditions. One model has since been measured at two precisions —
+  Qwen3.6-35B-A3B at FP8 and NVFP4 — and scored in the same band while running
+  1.57× faster. That is one data point on one model, not a general result.
 - **Bandwidth figure is vendor spec**, not independently measured.
 - **The harness comparison is one run per pairing.** Oh My Pi covers four
   models, Claude Code only Laguna (at 65K context — it never got far enough to

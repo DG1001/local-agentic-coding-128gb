@@ -171,13 +171,15 @@ def main():
                        "throughput.svg")
     print("written:", p.relative_to(WURZEL))
 
-    # --- spread: one model many runs, against seven models one run each
+    # --- spread: repeated runs of one model, against the field of seven
     v = json.loads((WURZEL / "results" / "variance.json").read_text())
     m = json.loads((WURZEL / "results" / "measurements.json").read_text())
     tabelle = sorted((x["total_hidden_passed"] for x in m.values()), reverse=True)
+    q = v["repeated_models"]["Qwen3.6-35B-A3B (NVFP4)"]["scores"]
     p = punkte(
         [("Nemotron-3.5-Lightning\nsame setup, %d runs" % len(v["all_nemotron_scores"]),
           v["all_nemotron_scores"], WARN),
+         ("Qwen3.6-35B-A3B NVFP4\nsame setup, %d runs" % len(q), q, BETONT),
          ("the %d models in the table\nONE run each" % len(tabelle), tabelle, BALKEN)],
         "One model spreads wider than the whole field",
         "hidden tests passed, of 86 · identical tasks, identical suites",

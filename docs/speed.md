@@ -42,10 +42,12 @@ inconsistently — see [the correction](#correction-the-old-speed-column-mixed-t
 |---|---|---|---|---|
 | Nemotron-3.5-Lightning + **DSpark** | 3B | NVFP4 | **121.4** | **91.1** |
 | Nemotron-3.5-Lightning-30B-A3B | 3B | NVFP4 | 78.7 | 61.0 |
-| Qwen3.6-35B-A3B | 3B | FP8 | 50.0 | 40.2 |
+| Qwen3.6-35B-A3B | 3B | **NVFP4** | 78.3 | 57.9 |
+| Qwen3.6-35B-A3B | 3B | **FP8** | 50.0 | 40.2 |
 | Qwen-AgentWorld-35B | 3B | BF16 | 30.9 | 26.2 |
 | KAT-Coder-V2.5 | ~3B | BF16 | 30.8 | 25.9 |
 | DeepSeek-V4-Flash | 8.5B | GGUF Q4-class | 29.0 | 16.5 |
+| Qwen3.8-27B + **MTP** | 27B (all) | NVFP4 | 24.8 | 17.5 |
 | Laguna-S-2.1 | 8.5B | NVFP4 | 18.6 | 19.5 |
 | Qwen3.6-27B | 27B (all) | BF16 | 4.4 | 4.1 |
 
@@ -59,16 +61,42 @@ JIT (Nemotron reads 62.8 instead of 78.7). Raw data:
 
 Three things fall out of it.
 
-**Quantization is a throughput knob.** Rows 2–5 all activate ~3B parameters and
-differ only in bytes per weight: NVFP4 78.7, FP8 50.0, BF16 30.8. Same
-architecture class, same machine, same vLLM build. On a bandwidth-bound box the
-precision of the weights moves throughput as much as the model choice does.
+**Quantization is a throughput knob — and the same model twice proves it.**
+Rows 3 and 4 are one model, Qwen3.6-35B-A3B, at two precisions: **NVFP4 78.3
+against FP8 50.0 tok/s, a factor of 1.57.** Nothing else differs.
+
+It is not the 2× that halving the bytes per weight suggests, and the gap is
+instructive: attention, expert routing and the KV cache (FP8 in both builds)
+do not shrink with the weights. Quantization moves the part of the bill that
+streams weights, which is most of it on this machine but not all of it.
+
+Across different models the same ordering holds — NVFP4 78.7, FP8 50.0, BF16
+30.8, all at ~3B active on the same vLLM build. On a bandwidth-bound box the
+precision of the weights moves throughput about as much as the model choice
+does.
+
+**And it did not cost points.** The FP8 build scored 68/86; the NVFP4 build
+scored 64 and 67 over two runs. That is the same band, and it is the only
+same-model comparison in this repo — the "quantization differs across models"
+caveat in the limitations now has one data point against it. One, on one model,
+with a harness change in between.
 
 **KAT and AgentWorld are the same speed** — 30.8 and 30.9. Both are 65 GB BF16
 MoEs with ~3B active on the same hardware, so the bandwidth argument in this
 README *requires* them to be. The old table had them at 30.4 and 22.9, a third
 apart, contradicting the repo's own thesis. Nobody noticed, this author
 included.
+
+**A dense model at 4 bits becomes usable again.** Qwen3.8-27B is dense — every
+weight streams for every token — and at NVFP4 with the model's own multi-token
+prediction it reads 24.8 tok/s against 4.4 for the BF16 dense model. That is
+5.6×, and it moves a dense 27B from "impractical" (3:07:36 for the benchmark)
+to "slow but usable" (54 minutes, 86/86). MTP is carrying half of it: 22 GB of
+weights over 273 GB/s allows 12.4 tok/s, so the measured 24.8 is a factor of
+exactly 2.00 from speculation, with a mean acceptance length of 2.91 out of 3
+and a 95% draft acceptance rate.
+
+It is still the second-slowest configuration here. Dense stays dense.
 
 **DeepSeek falls furthest under context.** 29.0 generating, 16.5 end-to-end — a
 1.76× drop, against 1.29× for Nemotron, 1.19× for KAT and 1.07× for the dense

@@ -124,6 +124,81 @@ one run. Nothing in this repo can distinguish 86/86 from 80/86; the only
 defensible reading is a two-way split between models that solve this class of
 task and models that do not.
 
+### A second model, and it does the same thing
+
+Nemotron could have been peculiar. Qwen3.6-35B-A3B in NVFP4 was then run twice,
+back to back, same harness, same server, nothing changed between them:
+
+| | run 1 | run 2 |
+|---|---|---|
+| t1-debug | 15/15 | 15/15 |
+| t2-refactor | **16/17** | **0/17** |
+| t3-neubau | 33/33 | 33/33 |
+| t4-feature | *0/21 — harness gap, see below* | 19/21 |
+| **Total** | 64/86 | 67/86 |
+
+`t2-refactor` swung the full width of the task between two consecutive runs of
+the same binary. Run 2 placed `STANDARD` in `__init__.py` instead of
+`einheiten.py` — a different wrong address than the FP8 build of the same model
+chose, which is a fifth variation on [one path in one
+task](benchmark.md#three-ways-to-fail-the-same-task).
+
+#### The harness gap in run 1
+
+`t4-feature` in run 1 reads 0/21 in one second. That is not a model result:
+
+```
+[harness] Zug 1: STOP, 0 Werkzeug(e), 2014/96304 Token
+[harness] FERTIG nach 1 Zuegen, 0 Werkzeugaufrufen, 0 s
+[harness] Token: 2014 Eingabe, 4 Ausgabe
+[README]
+```
+
+The model answered with four tokens, called no tool, and the harness accepted
+that as a finished run — exit code 0, untouched directory. The existing defence
+only fires when the output limit is hit; this was a clean `STOP`.
+
+It happened **twice in about sixty task runs** — the other case scored 9/15 on
+an untouched seed and sits inside the Abgleich series below, depressing one
+round by roughly six points. jaja now nudges once when a run would end without
+having called a single tool, and accepts the answer if the model insists.
+
+Read run 1 as **64 of 65 attempted points**. And note what this means for every
+other number in this repo: a harness gap that swallows a whole task looks
+exactly like a bad model.
+
+### Does asking the model to re-read the task help?
+
+The most promising idea to come out of the failures above was to stop accepting
+the model's own "done": before finishing, walk the task statement sentence by
+sentence and say, for each requirement, whether it is met and where. Ten runs,
+five with and five without, alternating:
+
+| Round | without | with |
+|---|---|---|
+| 1 | 79 | 81 |
+| 2 | 71 | 81 |
+| 3 | 80 | 47 |
+| 4 | 73 | 79 |
+| 5 | 63 | 75 |
+| **mean** | **73.2 ± 3.1** | **72.6 ± 6.5** |
+
+Paired, the difference is −0.6 points at t = −0.07 on four degrees of freedom.
+Nothing.
+
+**But the series could not have found an effect, and that is the more useful
+result.** 17 of 40 task runs hit the 80-turn limit; not one of the ten runs
+finished all four tasks inside it. The binding constraint was the turn budget,
+not the mechanism — and the check itself spends turns from that same budget, so
+the arm being tested was handed a handicap. A rerun with a limit that does not
+bind is the obvious next step and has not been done.
+
+Two things worth keeping from it anyway: the loop detector fired **once in 40
+runs**, so its threshold of six consecutive failures is not trigger-happy. And
+much of what looked like model variance in these runs is **censoring** — the
+same task ends at 29/33 or 14/33 depending on where 80 turns happened to cut
+it, which is not the model being random.
+
 That limitation was stated from the first revision and treated as boilerplate,
 including by the person writing it. It is now measured, and it is larger than
 the effects the table was being used to discuss. Re-running all seven models

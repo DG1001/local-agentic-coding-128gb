@@ -52,7 +52,8 @@
       "ohne": 8,
       "mit": 9,
       "of": 20
-    }
+    },
+    "harness_gap": "One task run in the \"mit\" arm (round 5, t1-debug) ended with zero tool calls and was accepted as finished, scoring 9/15 on an untouched seed. That is a harness gap, not a model result, and it depresses that round by roughly six points. jaja now nudges once in that case."
   },
   "all_nemotron_scores": [
     63,
@@ -68,5 +69,34 @@
     47,
     79,
     75
-  ]
+  ],
+  "repeated_models": {
+    "Nemotron-3.5-Lightning": {
+      "runs": 13,
+      "scores": [
+        63,
+        64,
+        85,
+        79,
+        71,
+        80,
+        73,
+        63,
+        81,
+        81,
+        47,
+        79,
+        75
+      ],
+      "note": "three harness/engine configurations plus the ten-run Abgleich series"
+    },
+    "Qwen3.6-35B-A3B (NVFP4)": {
+      "runs": 2,
+      "scores": [
+        64,
+        67
+      ],
+      "note": "Same model, same quantisation, same harness, back to back. t2-refactor went 16/17 to 0/17 between the two; run 1 also lost t4 to a harness gap, so its real figure is 64 of 65 attempted."
+    }
+  }
 }

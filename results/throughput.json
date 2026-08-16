@@ -4,7 +4,8 @@
     "end_to_end": "~16,850 input tokens, 800 output tokens, 1 run; tokens/s = completion_tokens / total wall time, so prefill is included",
     "warmup": "two short requests discarded after each server start — without them the first measurement pays CUDA graph capture and JIT (Nemotron read 62.8 instead of 78.7)",
     "prefix_cache": "the long prompt carries a fixed-width per-model prefix so a previous model cannot produce a cache hit; the body is character-identical for every model",
-    "caveat": "tokens are counted by each model own tokenizer. The same filler text is 16,849 tokens for the Qwen family and 20,483 for Laguna, so cross-family tokens/s comparisons understate the coarser tokenizer."
+    "caveat": "tokens are counted by each model own tokenizer. The same filler text is 16,849 tokens for the Qwen family and 20,483 for Laguna, so cross-family tokens/s comparisons understate the coarser tokenizer.",
+    "same_model_two_precisions": "qwen36moe (FP8, 35 GB) and qwen36nvfp4 (NVFP4, 23 GB) are the same model at two precisions, measured with the same method: 50.0 against 78.3 tok/s generating, 1.57x. Not the 2x that halving the bytes per weight suggests — attention, routing and the KV cache (FP8 in both) do not shrink with the weights."
   },
   "models": {
     "nemotron": {
@@ -70,6 +71,22 @@
       "generation_tok_s": 29.0,
       "end_to_end_tok_s": 16.5,
       "end_to_end_input_tokens": 16838
+    },
+    "qwen38": {
+      "name": "Qwen3.8-27B (dense) + MTP",
+      "engine": "vllm/vllm-openai:v0.27.1",
+      "speculative_decoding": true,
+      "generation_tok_s": 24.8,
+      "end_to_end_tok_s": 17.5,
+      "end_to_end_input_tokens": 16847
+    },
+    "qwen36nvfp4": {
+      "name": "Qwen3.6-35B-A3B (NVFP4)",
+      "engine": "vllm/vllm-openai:latest",
+      "speculative_decoding": false,
+      "generation_tok_s": 78.3,
+      "end_to_end_tok_s": 57.9,
+      "end_to_end_input_tokens": 16850
     }
   }
 }

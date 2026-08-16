@@ -125,6 +125,7 @@ else, each in a different way, and each with a green self-written suite:
 | Qwen-AgentWorld-35B | correct object in `einheiten.py`, plus a **second** one in `__init__.py` that shadowed it | 12 pass | 14 / 17 |
 | Qwen3.6-35B-A3B | put the object in **`basis.py`** and re-exported it from `__init__.py` | 21 pass | **0 / 17** |
 | Nemotron-3.5-Lightning | had it right, verified it, then lost it to compaction — and failed the task again in a harness that never compacts | collection error | **0 / 17** |
+| Qwen3.6-35B-A3B (NVFP4) | put it in **`__init__.py`** and nowhere else | 24 pass | **0 / 17** |
 
 ("Own tests" is that model's own suite for `t2` alone.)
 
@@ -135,6 +136,12 @@ fine and failed three assertions. Qwen's registry does not exist at that path at
 all, so `from wandler.einheiten import STANDARD` raises at **collection** time
 and pytest reports zero of seventeen. Same class of mistake, one import line
 apart, 14 points of difference.
+
+Four models, four placements, one path. Three of them wrote a working,
+importable, tested library — just not at the address the task gives. And the
+fourth case is the sharpest: **the same model at the same quantisation scored
+16/17 on one run and 0/17 on the next**, which means this is not even a stable
+property of a model, let alone of a family.
 
 That is the finding, and it is not about Python: **a requirement that names an
 exact path is graded all-or-nothing by any import-time check.** If you grade
