@@ -158,6 +158,52 @@ def gestapelt(daten, titel, untertitel, datei, breite=760):
     return ZIEL / datei
 
 
+def streu(punkte_daten, titel, untertitel, datei, breite=760, hoehe=430):
+    """Punktzahl gegen Durchsatz — eine Marke je Konfiguration.
+
+    Wo ein Modell mehrfach gelaufen ist, wird die Spanne als senkrechter Strich
+    gezeichnet und jeder Lauf als Punkt. Ein einzelner Mittelwert wuerde hier
+    genau das verschweigen, was der Bericht sonst betont.
+    """
+    links, unten, oben, rechts = 52, 58, 46, 24
+    xmin, xmax = 0, 95
+    ymin, ymax = 40, 90
+    bx = breite - links - rechts
+    by = hoehe - oben - unten
+    fx = lambda v: links + (v - xmin) / (xmax - xmin) * bx
+    fy = lambda v: oben + by - (v - ymin) / (ymax - ymin) * by
+
+    s = kopf(breite, hoehe, titel)
+    s.append(f'<text x="0" y="18" font-size="14" font-weight="600" fill="{TEXT}">{titel}</text>')
+    s.append(f'<text x="0" y="34" font-size="11" fill="{ACHSE}">{untertitel}</text>')
+    for v in range(ymin, ymax + 1, 10):
+        s.append(f'<line x1="{links}" y1="{fy(v):.1f}" x2="{links+bx}" y2="{fy(v):.1f}" '
+                 f'stroke="{ACHSE}" stroke-width="0.5" opacity="0.25"/>')
+        s.append(f'<text x="{links-8}" y="{fy(v)+4:.1f}" font-size="10" text-anchor="end" '
+                 f'fill="{ACHSE}">{v}</text>')
+    for v in range(0, xmax + 1, 20):
+        s.append(f'<text x="{fx(v):.1f}" y="{hoehe-30}" font-size="10" text-anchor="middle" '
+                 f'fill="{ACHSE}">{v}</text>')
+    s.append(f'<text x="{links+bx/2:.1f}" y="{hoehe-12}" font-size="11" text-anchor="middle" '
+             f'fill="{ACHSE}">end-to-end tokens/s (~16,850 input tokens)</text>')
+    s.append(f'<text x="12" y="{oben-14}" font-size="11" fill="{ACHSE}">hidden tests passed</text>')
+
+    for name, x, werte, farbe, dx, dy in punkte_daten:
+        if len(werte) > 1:
+            s.append(f'<line x1="{fx(x):.1f}" y1="{fy(min(werte)):.1f}" '
+                     f'x2="{fx(x):.1f}" y2="{fy(max(werte)):.1f}" '
+                     f'stroke="{farbe}" stroke-width="2.5" opacity="0.35"/>')
+        for w in werte:
+            s.append(f'<circle cx="{fx(x):.1f}" cy="{fy(w):.1f}" r="4.5" fill="{farbe}" '
+                     f'opacity="0.9"/>')
+        oberster = max(werte)
+        s.append(f'<text x="{fx(x)+dx:.1f}" y="{fy(oberster)+dy:.1f}" font-size="10.5" '
+                 f'fill="{TEXT}">{name}</text>')
+    s.append('</svg>')
+    (ZIEL / datei).write_text("\n".join(s) + "\n")
+    return ZIEL / datei
+
+
 def main():
     ZIEL.mkdir(parents=True, exist_ok=True)
     d = json.loads((WURZEL / "results" / "throughput.json").read_text())["models"]
@@ -184,6 +230,29 @@ def main():
         "One model spreads wider than the whole field",
         "hidden tests passed, of 86 · identical tasks, identical suites",
         "variance.svg")
+    print("written:", p.relative_to(WURZEL))
+
+    # --- score against throughput: the trade-off in one picture
+    j = json.loads((WURZEL / "results" / "java-measurements.json").read_text())
+    ab = v["abgleich_series"]
+    # Die Abgleich-Reihe lief auf Nemotron MIT DSpark -- sie gehoert an diesen
+    # Punkt, nicht an den ohne.
+    spec = [85] + ab["ohne"] + ab["mit"]
+    daten = [
+        ("Nemotron + DSpark · 11 runs", d["nemotronspec"]["end_to_end_tok_s"], spec, WARN, -132, -12),
+        ("Qwen3.6-35B-A3B NVFP4 · 2", d["qwen36nvfp4"]["end_to_end_tok_s"], [64, 67], BETONT, 10, 2),
+        ("Nemotron · 2 runs", d["nemotron"]["end_to_end_tok_s"], [63, 64], WARN, 10, 4),
+        ("Qwen3.6-35B-A3B FP8", d["qwen36moe"]["end_to_end_tok_s"], [68], BALKEN, 10, 4),
+        ("AgentWorld", d["agentworld"]["end_to_end_tok_s"], [80], BALKEN, 8, -8),
+        ("KAT-Coder", d["kat"]["end_to_end_tok_s"], [84], BALKEN, -20, -10),
+        ("Laguna", d["laguna"]["end_to_end_tok_s"], [86], BALKEN, 6, -8),
+        ("Qwen3.8-27B dense", d["qwen38"]["end_to_end_tok_s"], [86], BETONT, -20, 16),
+        ("DeepSeek-V4-Flash", d["ds4"]["end_to_end_tok_s"], [86], BALKEN, -34, -10),
+        ("Qwen3.6-27B dense", d["qwen27b"]["end_to_end_tok_s"], [86], BALKEN, 6, 16),
+    ]
+    p = streu(daten, "What a score costs in speed",
+              "vertical bars are repeated runs of one configuration, not error bars",
+              "tradeoff.svg")
     print("written:", p.relative_to(WURZEL))
 
     # --- hidden tests passed, per task

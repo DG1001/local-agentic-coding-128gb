@@ -90,6 +90,29 @@ between them. And run 1's `t4` was [a harness gap, not a model
 result](variance.md#one-run-is-not-a-measurement) — the model answered with
 four tokens, called no tool, and was accepted as finished.
 
+### What a score costs in speed
+
+![Score against throughput](charts/tradeoff.svg)
+
+Everything above is in this one picture: score up, throughput right, and a
+vertical bar wherever the same configuration was run more than once.
+
+**The fastest route to 86/86 is Laguna-S-2.1, at 19.5 end-to-end tokens per
+second.** Nothing faster than that has ever reached full marks here. DeepSeek
+and Qwen3.8-27B sit beside it at 16.5 and 17.5; the dense BF16 27B gets there
+too, at 4.1, which is why it is in the table and not in anyone's editor.
+
+To the right of them the picture falls apart rather than improving. Nemotron
+with DSpark runs **5× faster than Laguna** and has scored anywhere from 47 to
+85 across eleven runs — the tall bar is not an error bar, it is eleven actual
+results. Qwen3.6-35B-A3B at NVFP4 is three times faster than Laguna and has yet
+to break 70.
+
+So the trade is not "speed against a few points". On these four tasks it is
+**speed against knowing what you will get.** If that changes with a better
+harness, a bigger turn budget or simply more runs, this chart is where it will
+show up first.
+
 ## Hardware
 
 - ASUS Ascent GX10 — NVIDIA GB10, 128 GB unified LPDDR5X (121 GiB usable),
