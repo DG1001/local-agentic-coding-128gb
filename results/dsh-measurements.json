@@ -1,0 +1,71 @@
+{
+  "harness": "DeepSeek Harness (dsh), headless profile",
+  "repository": "https://github.com/deepseek-ai/deepseek-harness",
+  "version": "0.1.0-rc.5, checkout 141eb6f (2026-08-19)",
+  "released": "2026-08-13, MIT",
+  "runner": "bench/run-dsh.sh — same four tasks, same hidden suites, same 86-point scale as run.sh",
+  "provider": "custom OpenAI-compatible route to the local endpoint (api: openai-completions)",
+  "note": "One run per model. The other harnesses in this repo were measured the same way; the variance data in variance.json applies here too. The tool-call column is absent, not zero: the headless profile prints the final assistant message and no transcript.",
+  "runs": [
+    {
+      "model": "Qwen3.6-35B-A3B (NVFP4)",
+      "endpoint": "vLLM 0.27.1, 131072 context",
+      "wall_clock_minutes": 35,
+      "tasks": [
+        {"task": "t1-debug",    "seconds": 281, "exit_code": 0, "hidden_passed": 12, "hidden_total": 15, "own_tests": "1 failed, 8 passed"},
+        {"task": "t2-refactor", "seconds": 501, "exit_code": 0, "hidden_passed": 17, "hidden_total": 17, "own_tests": "1 failed, 19 passed"},
+        {"task": "t3-neubau",   "seconds": 855, "exit_code": 0, "hidden_passed": 31, "hidden_total": 33, "own_tests": "7 failed, 91 passed"},
+        {"task": "t4-feature",  "seconds": 489, "exit_code": 0, "hidden_passed": 19, "hidden_total": 21, "own_tests": "3 failed, 30 passed"}
+      ],
+      "total": "79/86"
+    },
+    {
+      "model": "Qwen3.8-27B (NVFP4 + MTP)",
+      "endpoint": "vLLM 0.27.1, 131072 context",
+      "wall_clock_minutes": 47,
+      "tasks": [
+        {"task": "t1-debug",    "seconds": 531, "exit_code": 0, "hidden_passed": 15, "hidden_total": 15, "own_tests": "10 passed"},
+        {"task": "t2-refactor", "seconds": 572, "exit_code": 0, "hidden_passed": 17, "hidden_total": 17, "own_tests": "1 failed, 23 passed"},
+        {"task": "t3-neubau",   "seconds": 962, "exit_code": 0, "hidden_passed": 32, "hidden_total": 33, "own_tests": "4 failed, 56 passed"},
+        {"task": "t4-feature",  "seconds": 790, "exit_code": 0, "hidden_passed": 14, "hidden_total": 21, "own_tests": "12 failed, 18 passed"}
+      ],
+      "total": "78/86"
+    },
+    {
+      "model": "NVIDIA-Nemotron-3.5-Lightning-30B-A3B (NVFP4)",
+      "endpoint": "vLLM 0.27.1, 131072 context",
+      "wall_clock_minutes": 22,
+      "tasks": [
+        {"task": "t1-debug",    "seconds": 454, "exit_code": 0, "hidden_passed": 15, "hidden_total": 15, "own_tests": "10 passed"},
+        {"task": "t2-refactor", "seconds": 260, "exit_code": 0, "hidden_passed": 17, "hidden_total": 17, "own_tests": "3 failed, 7 passed"},
+        {"task": "t3-neubau",   "seconds": 293, "exit_code": 0, "hidden_passed": 0,  "hidden_total": 33, "own_tests": "1 error (collection)", "comment": "Files written, nothing importable. Stopped after 28 log lines on the largest task."},
+        {"task": "t4-feature",  "seconds": 340, "exit_code": 0, "hidden_passed": 14, "hidden_total": 21, "own_tests": "1 error (collection)"}
+      ],
+      "total": "46/86"
+    },
+    {
+      "model": "DeepSeek-V4-Flash",
+      "endpoint": "ds4-server v0.6.2, 65536 context",
+      "wall_clock_minutes": 54,
+      "tasks": [
+        {"task": "t1-debug",    "seconds": 390,  "exit_code": 0, "hidden_passed": 15, "hidden_total": 15, "own_tests": "9 passed"},
+        {"task": "t2-refactor", "seconds": 404,  "exit_code": 0, "hidden_passed": 17, "hidden_total": 17, "own_tests": "2 failed, 15 passed"},
+        {"task": "t3-neubau",   "seconds": 1564, "exit_code": 0, "hidden_passed": 33, "hidden_total": 33, "own_tests": "39 passed"},
+        {"task": "t4-feature",  "seconds": 924,  "exit_code": 0, "hidden_passed": 21, "hidden_total": 21, "own_tests": "20 passed"}
+      ],
+      "total": "86/86"
+    }
+  ],
+  "discarded_runs": {
+    "why": "Two earlier attempts at the DeepSeek-V4-Flash run are kept because their failure mode is the point, not the score. ds4-server v0.5.4 refused requests mid-run with HTTP 503: 'serial right-size: no graph fits (prompt=N need_min=N+1024); refusing 503'. The harness sends session-less requests; the server sized the graph by estimate and refused when unsure. Updating to v0.6.2 — which measures the graph instead of estimating it, and allocates the session graph lazily — removed the refusals entirely.",
+    "attempts": [
+      {"context": 65536, "server": "v0.5.4", "refusals": 3, "total": "65/86",
+       "per_task": "15/15, 17/17, 12/33, 21/21",
+       "note": "Refusals at 25677, 28239 and 36552 prompt tokens."},
+      {"context": 49152, "server": "v0.5.4", "refusals": 2, "total": "65/86",
+       "per_task": "15/15, 17/17, 33/33, 0/21",
+       "note": "A smaller window did not help: the second refusal hit a 13973-token request, far inside a 49152 window. It moved the failure later, not away."}
+    ],
+    "lesson": "Both discarded attempts total 65/86 with completely different distributions — 12/33 and 21/21 in one, 33/33 and 0/21 in the other, depending on when the refusal landed. A total alone would have been read as a model result twice over."
+  }
+}

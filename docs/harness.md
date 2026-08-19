@@ -1,7 +1,7 @@
 ---
 title: The harness matters as much as the model
 nav_order: 5
-description: opencode, Oh My Pi, Claude Code and a purpose-built Java harness.
+description: opencode, Oh My Pi, Claude Code, a purpose-built Java harness, and DeepSeek Harness.
 ---
 
 [← Overview](index.md)
@@ -332,3 +332,77 @@ reservation — it fills input up to the number you give it and adds
 
 Getting all three right still was not enough: it then hit the compaction
 thrashing above.
+
+## A fifth harness: DeepSeek Harness, and a server that refused
+
+[DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) appeared on
+13 August 2026 — MIT, plugin-first, everything from the inference layer to the
+agent loop declared as a replaceable component. Its `headless` profile answers
+one task and exits, which is exactly the shape this bench needs, so
+[`bench/run-dsh.sh`](../bench/run-dsh.sh) is `bench/run.sh` with `dsh --profile
+headless` in place of `opencode run`: same four tasks, same hidden suites, same
+86 points.
+
+Two setup traps, both silent:
+
+- The default model is `deepseek-official/deepseek-v4-flash`, and it asks for a
+  key to the remote service. A local endpoint needs a custom provider **and**
+  an `agent-default-model` override in `$DSH_HOME/settings.yaml`.
+- `pnpm dsh` resolves only from inside the repository. Running against a task
+  directory elsewhere needs the built `apps/cli/lib/bin.js` directly.
+
+Four models, one run each ([dsh-measurements.json](../results/dsh-measurements.json)):
+
+| Model | t1 (15) | t2 (17) | t3 (33) | t4 (21) | Total | Wall clock |
+|---|---|---|---|---|---|---|
+| DeepSeek-V4-Flash | 15 | 17 | 33 | 21 | **86 / 86** | 54:00 |
+| Qwen3.6-35B-A3B (NVFP4) | 12 | 17 | 31 | 19 | 79 / 86 | 35:00 |
+| Qwen3.8-27B | 15 | 17 | 32 | 14 | 78 / 86 | 47:00 |
+| Nemotron-3.5-Lightning | 15 | 17 | 0 | 14 | 46 / 86 | 22:00 |
+
+Against the other harnesses, same models:
+
+| Model | opencode | Java harness | DeepSeek Harness |
+|---|---|---|---|
+| DeepSeek-V4-Flash | 86 | 86 | **86** |
+| Qwen3.6-35B-A3B (NVFP4) | 86 | 64 / 67 | 79 |
+| Qwen3.8-27B | 86 | 86 | 78 |
+| Nemotron-3.5-Lightning | 63 | 64 (85 with DSpark) | 46 |
+
+DeepSeek-V4-Flash is the only model here that reaches 86/86 under all three,
+and it pays for it: 54 minutes against Qwen3.6's 35 for seven points fewer.
+Nemotron's `t3-neubau` is its familiar failure — files written, nothing
+importable, 28 log lines and a stop on the largest task.
+
+One column is missing rather than empty. The headless profile prints the final
+assistant message and no transcript, so there is nothing to count tool calls
+from. A zero there would mean "not measured".
+
+### The two runs that had to be thrown away
+
+The DeepSeek-V4-Flash run took three attempts, and the two discarded ones are
+worth more than the number they produced.
+
+`ds4-server` v0.5.4 refused requests mid-run:
+
+```
+serial right-size: no graph fits (prompt=36552 need_min=37576
+                                  boot -c 65536); refusing 503
+```
+
+The first diagnosis — memory exhausted, 117 of 121 GB in use — was wrong, and
+the second attempt disproved it: with the window cut to 49,152 the server
+refused a **13,973-token** request. Far inside the window. The size was never
+the problem; the server sized the graph for session-less requests by estimate
+and refused when the estimate did not fit.
+
+Updating to v0.6.2 removed the refusals entirely — it measures the graph rather
+than estimating it (`serial graph estimate reconcile: est=4604.2 MiB
+measured=4178.3 MiB drift=-9.2% (lease basis = measured)`) and allocates the
+session graph lazily. Four tasks, four exit codes of zero, no refusals, 86/86.
+
+The part worth keeping: **both discarded attempts scored exactly 65/86 with
+completely different distributions** — 12/33 and 21/21 in one, 33/33 and 0/21
+in the other, depending only on when the refusal landed. Two identical totals,
+neither of them a model result. A benchmark that reports one number per model
+would have published that twice without a flicker.
