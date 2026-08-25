@@ -38,10 +38,11 @@
 <circle cx="466.0" cy="110" r="4.5" fill="#1a7f37" opacity="0.85"/>
 <circle cx="493.0" cy="110" r="4.5" fill="#1a7f37" opacity="0.85"/>
 <circle cx="664.0" cy="110" r="4.5" fill="#1a7f37" opacity="0.85"/>
-<text x="242" y="156" font-size="12" text-anchor="end" fill="#7d8590">the 9 models in the table</text>
+<text x="242" y="156" font-size="12" text-anchor="end" fill="#7d8590">the 10 models in the table</text>
 <text x="242" y="170" font-size="10.5" text-anchor="end" fill="#6e7781">ONE run each</text>
 <line x1="457.0" y1="156" x2="664.0" y2="156" stroke="#2f81f7" stroke-width="2" opacity="0.35"/>
 <text x="674.0" y="160" font-size="10" fill="#6e7781">spread 23</text>
+<circle cx="664.0" cy="156" r="4.5" fill="#2f81f7" opacity="0.85"/>
 <circle cx="664.0" cy="156" r="4.5" fill="#2f81f7" opacity="0.85"/>
 <circle cx="664.0" cy="156" r="4.5" fill="#2f81f7" opacity="0.85"/>
 <circle cx="664.0" cy="156" r="4.5" fill="#2f81f7" opacity="0.85"/>

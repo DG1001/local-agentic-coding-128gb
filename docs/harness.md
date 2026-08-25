@@ -1,7 +1,7 @@
 ---
 title: The harness matters as much as the model
 nav_order: 5
-description: opencode, Oh My Pi, Claude Code, a purpose-built Java harness, and DeepSeek Harness.
+description: opencode, Oh My Pi, Claude Code, a purpose-built Java harness, DeepSeek Harness — and why the harness decides which model looks better.
 ---
 
 [← Overview](index.md)
@@ -406,3 +406,52 @@ completely different distributions** — 12/33 and 21/21 in one, 33/33 and 0/21
 in the other, depending only on when the refusal landed. Two identical totals,
 neither of them a model result. A benchmark that reports one number per model
 would have published that twice without a flicker.
+
+## Two models of the same build, twenty points apart — in one harness
+
+Ornith-1.5-35B-A3B arrived on 19 August 2026: MIT, Qwen3.5-MoE architecture,
+35B total and 3B active, 23 GB at NVFP4. That is Qwen3.6-35B-A3B (NVFP4) to
+the gigabyte, and the throughput agrees — 78.4 against 78.3 tok/s generating,
+58.9 against 57.9 end-to-end. Same size, same shape, same speed, different
+training. There is no cleaner like-for-like pair in this collection.
+
+They do not behave the same.
+
+| | opencode | Java harness |
+|---|---|---|
+| Qwen3.6-35B-A3B (NVFP4) | 86 / 86 | 64, 67 |
+| Ornith-1.5-35B-A3B (NVFP4) | 69, 86 | **85 / 86** |
+
+Under opencode the two are indistinguishable at their best. Under the Java
+harness they are twenty points apart, and the harness has not changed between
+the two rows — the model has. Whatever the Java harness asks of a model that
+opencode does not, Ornith supplies it and Qwen3.6 does not.
+
+That sharpens the claim this page has been making. "The loop decides whether
+you get what the model can do" is true, and here is its mirror image: **which
+loop you measure decides which model looks better.** A benchmark that fixes
+one harness and ranks models is measuring the pair, not the model. Both rows
+above are real, and they disagree about which model to pick.
+
+Ornith also finishes in 28 minutes where opencode takes 69, and it does so
+while hitting the 80-turn limit on two tasks — with the work already done.
+`t4-feature` scored 21/21 despite being cut off mid-run.
+
+### The 69 that was not a result
+
+Ornith's first opencode run scored 69/86, and the whole gap sat in
+`t2-refactor`:
+
+```
+ImportError: cannot import name 'eintragen' from 'wandler.basis'
+```
+
+The `Register` class was there, built correctly, and the model's own tests
+passed with sixteen green. But the rewrite had dropped one function that the
+hidden suite imports, so collection failed and a solved task scored zero. The
+second run scored 17/17 on the same task in 150 seconds.
+
+Seventeen points on one missing line, with nothing systematic behind it. If
+this repo published one run per model — as its own summary table does — Ornith
+would sit at 69 and the like-for-like comparison above would never have been
+noticed.

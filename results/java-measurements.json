@@ -437,6 +437,43 @@
         "t3-neubau": 61,
         "t4-feature": 38
       }
+    },
+    {
+      "model": "Ornith-1.5-35B-A3B (NVFP4)",
+      "context_window": 65536,
+      "note": "28 minutes against opencode's 69 for one point less. t3-neubau and t4-feature both ended at the 80-turn limit after the work was already done — t4 scored 21/21 despite the stop. Against Qwen3.6-35B-A3B (NVFP4), which is the same architecture at the same size and scores 64 and 67 here, this is the widest same-harness gap between two like-for-like models in the collection.",
+      "tasks": [
+        {
+          "task": "t1-debug",
+          "seconds": 346,
+          "exit_code": 0,
+          "hidden_passed": 15,
+          "hidden_total": 15
+        },
+        {
+          "task": "t2-refactor",
+          "seconds": 87,
+          "exit_code": 0,
+          "hidden_passed": 17,
+          "hidden_total": 17
+        },
+        {
+          "task": "t3-neubau",
+          "seconds": 717,
+          "exit_code": 1,
+          "hidden_passed": 32,
+          "hidden_total": 33,
+          "stop": "turn limit 80 reached after 82 tool calls"
+        },
+        {
+          "task": "t4-feature",
+          "seconds": 557,
+          "exit_code": 1,
+          "hidden_passed": 21,
+          "hidden_total": 21,
+          "stop": "turn limit 80 reached after 86 tool calls"
+        }
+      ]
     }
   ],
   "earlier_revision_read_bash_only": {

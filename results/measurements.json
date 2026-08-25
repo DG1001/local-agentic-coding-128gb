@@ -509,5 +509,55 @@
     "total_tool_calls": 99,
     "total_pytest_runs": 15,
     "total_own_tests": 0
+  },
+  "ornith": {
+    "name": "Ornith-1.5-35B-A3B (NVFP4)",
+    "architecture": "MoE, 35B total / 3B active",
+    "precision": "NVFP4",
+    "weights_gb_on_disk": 23,
+    "engine": "vLLM 0.26.0",
+    "note": "Released 19 August 2026, MIT, Qwen3.5-MoE architecture. Same size, same quantisation and the same generation throughput as Qwen3.6-35B-A3B (NVFP4) — 78.4 against 78.3 tok/s — which makes the pair the cleanest like-for-like comparison in this collection. This is the second opencode run; the first scored 69/86 because t2-refactor lost one function during the rewrite and the hidden suite could not import. See variance.json.",
+    "tool_call_counts": "read_search_calls and pytest_runs counted from the opencode transcript; opencode's tool marker changed since the earlier runs, so all_tool_calls is not reported rather than guessed",
+    "tasks": {
+      "t1-debug": {
+        "seconds": 62,
+        "exit_code": 0,
+        "hidden_passed": 15,
+        "hidden_total": 15,
+        "read_search_calls": 3,
+        "pytest_runs": 3
+      },
+      "t2-refactor": {
+        "seconds": 150,
+        "exit_code": 0,
+        "hidden_passed": 17,
+        "hidden_total": 17,
+        "read_search_calls": 6,
+        "pytest_runs": 3
+      },
+      "t3-neubau": {
+        "seconds": 3126,
+        "exit_code": 0,
+        "hidden_passed": 33,
+        "hidden_total": 33,
+        "read_search_calls": 18,
+        "pytest_runs": 14
+      },
+      "t4-feature": {
+        "seconds": 806,
+        "exit_code": 0,
+        "hidden_passed": 21,
+        "hidden_total": 21,
+        "read_search_calls": 12,
+        "pytest_runs": 10
+      }
+    },
+    "total_seconds": 4144,
+    "total_hidden_passed": 86,
+    "total_hidden": 86,
+    "total_read_search_calls": 39,
+    "total_pytest_runs": 30,
+    "total_tool_calls": null,
+    "total_own_tests": null
   }
 }

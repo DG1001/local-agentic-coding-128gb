@@ -46,6 +46,14 @@ tests pass.**
 | **Qwen3.8-27B** (NVFP4 + MTP) | dense | 22 GB | **86 / 86** | >1:47 ‡ | 74 | 118 |
 | Qwen3.6-35B-A3B (FP8) | MoE | 35 GB | 68 / 86 | 44:30 | 116 | 125 |
 | Nemotron-3.5-Lightning-30B-A3B | MoE | 21 GB | 63–85 / 86 † | 36:29 | 220 | 54 |
+| **Ornith-1.5-35B-A3B** (NVFP4) | MoE | 23 GB | **86 / 86** § | 1:09:00 | — | — |
+
+§ Added later, not part of the original round. Two opencode runs: 69/86 and
+86/86. The 69 was `t2-refactor` scoring zero because the rewrite dropped one
+function and the hidden suite could not import it — the model's own tests
+passed. Tool-call and own-test columns are blank because opencode's transcript
+markers changed since the earlier runs; counting them the old way would have
+produced numbers that are not comparable.
 
 ‡ `t3-neubau` ran into the 90-minute cap with the work already finished — the
 hidden suite passed 33/33 against what was on disk. That wall clock is a floor,

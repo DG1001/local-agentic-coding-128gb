@@ -5,7 +5,8 @@
     "warmup": "two short requests discarded after each server start — without them the first measurement pays CUDA graph capture and JIT (Nemotron read 62.8 instead of 78.7)",
     "prefix_cache": "the long prompt carries a fixed-width per-model prefix so a previous model cannot produce a cache hit; the body is character-identical for every model",
     "caveat": "tokens are counted by each model own tokenizer. The same filler text is 16,849 tokens for the Qwen family and 20,483 for Laguna, so cross-family tokens/s comparisons understate the coarser tokenizer.",
-    "same_model_two_precisions": "qwen36moe (FP8, 35 GB) and qwen36nvfp4 (NVFP4, 23 GB) are the same model at two precisions, measured with the same method: 50.0 against 78.3 tok/s generating, 1.57x. Not the 2x that halving the bytes per weight suggests — attention, routing and the KV cache (FP8 in both) do not shrink with the weights."
+    "same_model_two_precisions": "qwen36moe (FP8, 35 GB) and qwen36nvfp4 (NVFP4, 23 GB) are the same model at two precisions, measured with the same method: 50.0 against 78.3 tok/s generating, 1.57x. Not the 2x that halving the bytes per weight suggests — attention, routing and the KV cache (FP8 in both) do not shrink with the weights.",
+    "long_prompt_instruction": "the long prompt ends with an explicit request for a 900-word text. Without it a model answers filler with two sentences: Ornith produced 116 output tokens and read 29.4 tok/s, while its prefill runs at about 6,000 tok/s. The end-to-end number is completion_tokens over wall time, so it measures terseness unless the output actually reaches the cap. tools/throughput.py implements the method."
   },
   "models": {
     "nemotron": {
@@ -87,6 +88,14 @@
       "generation_tok_s": 78.3,
       "end_to_end_tok_s": 57.9,
       "end_to_end_input_tokens": 16850
+    },
+    "ornith": {
+      "name": "Ornith-1.5-35B-A3B (NVFP4)",
+      "engine": "vllm/vllm-openai:latest",
+      "speculative_decoding": false,
+      "generation_tok_s": 78.4,
+      "end_to_end_tok_s": 58.9,
+      "end_to_end_input_tokens": 16862
     }
   }
 }

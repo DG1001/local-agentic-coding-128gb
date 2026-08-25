@@ -108,6 +108,15 @@
         86
       ],
       "note": "Same model, two precisions, two harnesses. t2-refactor across the four: 0, 16, 0, 17. Any claim about what quantisation costs can be supported or refuted here by choosing which runs to quote."
+    },
+    "Ornith-1.5-35B-A3B (NVFP4)": {
+      "runs": 3,
+      "scores": [
+        69,
+        86,
+        85
+      ],
+      "note": "Two opencode runs and one Java-harness run. t2-refactor came out 0/17, 17/17 and 17/17: in the first run the rewrite dropped the function 'eintragen' from wandler/basis.py, so the hidden suite failed to import and the whole task scored zero while the model's own tests passed. Seventeen points on one missing line, and nothing systematic behind it."
     }
   }
 }
