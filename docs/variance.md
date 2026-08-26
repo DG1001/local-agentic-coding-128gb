@@ -222,3 +222,38 @@ Not everything in this repo is one sample of a noisy variable:
 
 The rule that separates them: **a number needs repetition, a mechanism needs
 evidence.** This repo has plenty of the second and almost none of the first.
+
+## Outside the benchmark: a research task, three identical runs
+
+Everything above is coding. The same question was put to an agent doing
+research instead — Hermes Agent with Nemotron-3.5-Lightning, told to search the
+web for AI and agentic-coding news plus new open-weight models and build an
+HTML page from it. Same wording, same harness, same local SearXNG, three runs,
+nothing changed between them.
+
+| | run 1 | run 2 | run 3 |
+|---|---|---|---|
+| words | 65 | 718 | 530 |
+| links | 0 | 1 | 14 (13 domains, 10 resolving) |
+| seconds | 117 | 126 | 63 |
+| searches / extracts | 8 / 3 | 5 / 3 | 6 / 0 |
+
+Run 1 produced a shell: navigation buttons, category headings, and the line
+"use the navigation buttons above to switch between categories" — with nothing
+under them. It had searched *more* than the others and written the least. Run 3
+produced the best-sourced page of the day, better than the same model without
+speculative decoding (5 links) and better than Ornith on the same task, which
+wrote 1069 words and cited nothing.
+
+**The spread within one configuration is larger than any difference measured
+between configurations.** That is the same lesson as Nemotron's 47–85 across
+thirteen benchmark runs, but sharper: a coding task has a hidden suite that
+says 0/33 or 33/33, so at least the failure is legible. A research page that
+looks plausible and contains no verifiable claim fails quietly.
+
+It also disposed of a hypothesis. The first DSpark run looked like evidence
+that speculative decoding degrades agent behaviour — a 65-word husk against 415
+words without it. Two repeats removed the case: the mechanism worked throughout
+(2,307 drafts, 66 % of draft tokens accepted), and the outlier was an outlier.
+By the same token the 64 → 85 jump DSpark showed in the benchmark should be
+read as one run, not as an effect.

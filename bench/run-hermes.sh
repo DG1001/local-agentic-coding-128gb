@@ -12,6 +12,13 @@
 #                     reported the file missing.
 #   --in DIR          the task directory, given explicitly for the same reason.
 #
+# And the entry point matters more than it looks. `-z/--oneshot` accepts the
+# model's first message as the answer: given a long task description, both
+# Ornith and Nemotron wrote a detailed report of edits they had never made --
+# 23 lines of prose, zero tool calls, not one file touched. `chat -q` runs the
+# real agent loop; the same task produced 27 tool calls. --max-turns 80 keeps
+# it comparable with the Java harness.
+#
 # And one guard that is not optional here. Hermes searches beyond the
 # directory it was given: asked to change rabatt.py it announced it had found
 # "many copies under /tmp" and picked the newest. Under bench2/runs there are
@@ -19,6 +26,13 @@
 # would silently corrupt someone else's measurement. After every task this
 # script therefore checks whether anything outside the task directory was
 # touched, and says so loudly.
+#
+# The first version of that check watched runs/ only. It missed the case
+# that actually happened: an agent solved t1-debug in tasks/t1-debug/seed --
+# the source every future run is copied from -- while reporting zero changes
+# in its own work copy. tools/pruefe-seeds.sh caught it afterwards. The check
+# now watches tasks/ as well, because that is the file set where a stray edit
+# is not one bad run but every run after it.
 set -u
 
 KENNUNG="$1"
@@ -61,8 +75,8 @@ for A in $AUFGABEN; do
     MARKE=$(mktemp)                      # Zeitstempel fuer die Fremdschreib-Probe
     T0=$(date +%s)
     HERMES_INFERENCE_MODEL="$MODELL" HERMES_BASE_URL="$BASISURL" \
-    timeout 5400 "$HERMES" --yolo --no-restore-cwd --in "$W" \
-        -m "$MODELL" -z "$(cat "$BASIS/tasks/$A/aufgabe.md")" \
+    timeout 5400 "$HERMES" chat --yolo --no-restore-cwd --in "$W" \
+        -m "$MODELL" --max-turns 80 -q "$(cat "$BASIS/tasks/$A/aufgabe.md")" \
         > "$ZIEL/$A.log" 2>&1
     RC=$?
     T1=$(date +%s)
@@ -70,9 +84,9 @@ for A in $AUFGABEN; do
 
     # Hat es ausserhalb geschrieben? Alles unter runs/, das seit dem Start
     # angefasst wurde und nicht zu dieser Aufgabe gehoert.
-    FREMD=$(find "$BASIS/runs" -newer "$MARKE" -type f \
+    FREMD=$(find "$BASIS/runs" "$BASIS/tasks" -newer "$MARKE" -type f \
             \( -name '*.py' -o -name '*.md' -o -name '*.txt' \) \
-            -not -path "$W/*" 2>/dev/null | head -5)
+            -not -path "$W/*" -not -path '*__pycache__*' 2>/dev/null | head -5)
     rm -f "$MARKE"
     if [ -n "$FREMD" ]; then
         echo "### WARNUNG $A: ausserhalb geschrieben:" >> "$ZIEL/verlauf.log"

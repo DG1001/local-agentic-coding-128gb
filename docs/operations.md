@@ -109,3 +109,27 @@ rather than once per run: the wedge does not wait for a convenient moment.
 GB10 there is no separate VRAM figure to sanity-check it against — NVML
 reports `[N/A]` for GPU memory, because the 121 GB in the ordinary memory
 display already is the whole story.
+
+## Speculative decoding lowers GPU utilisation, and that is not a problem
+
+Watching `btop` during the runs: Nemotron and Ornith decoding normally sit at
+about 96 % GPU utilisation. The same Nemotron with DSpark peaks lower, around
+92–93 %, while producing more tokens per second (121 against 79 measured).
+
+That is the expected shape rather than a fault. Speculative decoding runs a
+small draft model, then verifies its guesses with the large one, then commits
+whatever was accepted. Each of those is a separate, smaller piece of work with
+a synchronisation point between them, so the device idles briefly more often.
+Utilisation counts *whether* a kernel is resident, not how much useful work it
+carries.
+
+**Utilisation is not throughput.** The one number that matters is tokens per
+second, and by that measure the lower-utilisation configuration wins by half
+again. The place where high utilisation should worry you is the opposite case,
+recorded above: 96 % with `vllm:generation_tokens_total` not moving at all.
+Busy and productive look identical from the outside; only the counter tells
+them apart.
+
+(Observed, not instrumented: the utilisation figures come from watching a live
+display during runs, not from a logged series. The throughput figures in
+[throughput.json](../results/throughput.json) are measured.)
