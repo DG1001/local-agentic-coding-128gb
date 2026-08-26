@@ -12,6 +12,9 @@ ZIEL="$BASIS/runs/$KENNUNG"
 JAJA="$HOME/Developer/github.com/jaja/target/jaja-0.1.0.jar"
 JAVA=/usr/lib/jvm/java-21-openjdk-arm64/bin/java
 AUFGABEN="t1-debug t2-refactor t3-neubau t4-feature"
+# Vor jeder Aufgabe pruefen, ob der Motor ueberhaupt antwortet -- ein
+# haengendes vLLM sieht sonst aus wie ein langsames Modell.
+. "$(dirname "$0")/bereit.sh"
 
 rm -rf "$ZIEL"; mkdir -p "$ZIEL"
 : > "$ZIEL/ergebnis.tsv"
@@ -34,6 +37,11 @@ for A in $AUFGABEN; do
     ( cd "$W" && git init -q && git add -A 2>/dev/null
       git -c user.email=b@b -c user.name=bench commit -qm seed --allow-empty )
 
+    motor_bereit "$BASISURL" "$MODELL" || {
+        echo "### $A uebersprungen: Motor antwortet nicht" >> "$ZIEL/verlauf.log"
+        printf '%s\t0\t99\t0\t0\t0\tMotor haengt\n' "$A" >> "$ZIEL/ergebnis.tsv"
+        continue
+    }
     echo "### $A gestartet $(date +%H:%M:%S)" >> "$ZIEL/verlauf.log"
     T0=$(date +%s)
     timeout 5400 "$JAVA" -jar "$JAJA" \

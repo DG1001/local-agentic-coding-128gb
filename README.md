@@ -294,6 +294,9 @@ bench/
   run-java.sh             same four tasks, the purpose-built Java harness
                           (github.com/DG1001/jaja)
   run-dsh.sh              same four tasks, DeepSeek Harness as the harness
+  run-hermes.sh           same four tasks, Hermes Agent as the harness
+  bereit.sh               engine liveness check, sourced by every runner:
+                          vLLM wedges, and a wedged engine reads as a slow model
   tasks/<task>/
     task.md               the prompt handed to the agent, verbatim
     seed/                 starting repository (absent for t3-neubau)
@@ -311,6 +314,8 @@ results/
 tools/
   model-switch            starts exactly one model, stops the others
   charts.py               regenerates docs/charts/*.svg from results/*.json
+  throughput.py           the throughput method, previously prose only
+  zuege.py                turn economy of a Java-harness run, from its log
   pruefe-seeds.sh         checks the published task seeds still match the
                           working copy the runs are measured from
   cc-local                launches Claude Code against a local model

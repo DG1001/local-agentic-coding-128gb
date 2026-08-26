@@ -23,6 +23,9 @@ DSH="$HOME/deepseek-harness/apps/cli/lib/bin.js"
 URL="${URL:-http://127.0.0.1:8889/v1}"
 ZIEL="$BASIS/runs/$KENNUNG"
 AUFGABEN="t1-debug t2-refactor t3-neubau t4-feature"
+# Vor jeder Aufgabe pruefen, ob der Motor ueberhaupt antwortet -- ein
+# haengendes vLLM sieht sonst aus wie ein langsames Modell.
+. "$(dirname "$0")/bereit.sh"
 
 [ -f "$DSH" ] || { echo "dsh nicht gebaut: $DSH"; exit 1; }
 
@@ -61,6 +64,11 @@ for A in $AUFGABEN; do
     ( cd "$W" && git init -q && git add -A 2>/dev/null
       git -c user.email=b@b -c user.name=bench commit -qm seed --allow-empty )
 
+    motor_bereit "$URL" "$MODELL" || {
+        echo "### $A uebersprungen: Motor antwortet nicht" >> "$ZIEL/verlauf.log"
+        printf '%s\t0\t99\t0\t0\t0\tMotor haengt\n' "$A" >> "$ZIEL/ergebnis.tsv"
+        continue
+    }
     echo "### $A gestartet $(date +%H:%M:%S)" >> "$ZIEL/verlauf.log"
     T0=$(date +%s)
     ( cd "$W" && timeout 5400 node "$DSH" --profile headless \
