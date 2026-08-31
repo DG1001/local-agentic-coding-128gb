@@ -117,6 +117,14 @@
         85
       ],
       "note": "Two opencode runs and one Java-harness run. t2-refactor came out 0/17, 17/17 and 17/17: in the first run the rewrite dropped the function 'eintragen' from wandler/basis.py, so the hidden suite failed to import and the whole task scored zero while the model's own tests passed. Seventeen points on one missing line, and nothing systematic behind it."
+    },
+    "Qwen3.8-Flash-Next (UD-Q3_K_XL)": {
+      "runs": 2,
+      "scores": [
+        86,
+        86
+      ],
+      "note": "Two opencode runs, 33:33 and 38:24. The first model here to score 86/86 twice in a row. No task lost a point in either run; the spread is wall clock only, and almost all of it is t3-neubau at 779 s against 1319 s."
     }
   }
 }

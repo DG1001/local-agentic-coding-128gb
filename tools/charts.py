@@ -263,6 +263,11 @@ def main():
         ("Qwen3.8-27B dense · 2 runs", d["qwen38"]["end_to_end_tok_s"], [86, 86], BETONT, -12, 24),
         ("DeepSeek-V4-Flash", d["ds4"]["end_to_end_tok_s"], [86], BALKEN, -14, 44),
         ("Qwen3.6-27B dense", d["qwen27b"]["end_to_end_tok_s"], [86], BALKEN, 9, -9),
+        # Qwen3.8-Flash-Next: der einzige Punkt mit zwei Laeufen auf demselben
+        # Wert. GLM-5.3-Flash steht bewusst NICHT hier -- seine 9 sind die
+        # Punktzahl der unberuehrten Saat, keine Leistung des Modells, und in
+        # einem Diagramm "Punktzahl gegen Durchsatz" waere das eine Luege.
+        ("Qwen3.8-Flash-Next · 2 runs", d["qwen38flash"]["end_to_end_tok_s"], [86, 86], BETONT, 9, 4),
     ]
     p = streu(daten, "What a score costs in speed",
               "vertical bars are repeated runs of one configuration, not error bars",

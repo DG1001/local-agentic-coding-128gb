@@ -51,6 +51,8 @@ tests pass.**
 | Qwen3.6-35B-A3B (FP8) | MoE | 35 GB | 68 / 86 | 44:30 | 116 | 125 |
 | Nemotron-3.5-Lightning-30B-A3B | MoE | 21 GB | 63–85 / 86 † | 36:29 | 220 | 54 |
 | **Ornith-1.5-35B-A3B** (NVFP4) | MoE | 23 GB | **86 / 86** § | 1:09:00 | — | — |
+| **Qwen3.8-Flash-Next** (Q3_K_XL) | MoE | 84 GB | **86 / 86** ¶ | **33:33** | — | 98 |
+| GLM-5.3-Flash (IQ1_S) | MoE | 87 GB | 9 / 86 ‖ | 35:28 | 16 | — |
 
 § Added later, not part of the original round. Two opencode runs: 69/86 and
 86/86. The 69 was `t2-refactor` scoring zero because the rewrite dropped one
@@ -62,6 +64,18 @@ produced numbers that are not comparable.
 ‡ `t3-neubau` ran into the 90-minute cap with the work already finished — the
 hidden suite passed 33/33 against what was on disk. That wall clock is a floor,
 not a measurement, so the total is not comparable with the other rows.
+
+¶ Added later. **The first model here to score 86/86 on two consecutive runs**
+— 33:33 and 38:24, no task losing a point in either. It is also the first run
+on llama.cpp rather than vLLM: `llama-server`, `-c 65536 -ngl 99 --parallel 1
+--no-mmap --jinja`. Architecture support (`qwen4exp`) landed days before the
+run; before that the checkpoint sat on disk unloadable.
+
+‖ **All nine points are the untouched seed's own score.** Run the hidden suite
+against `t1-debug` before any model touches it and it passes 9 of 15; the other
+three seeds score zero. GLM-5.3-Flash's contribution across all four tasks is
+therefore **nothing at all**, and the row is not a verdict on the model but a
+record of a configuration that did not work. See the GLM section below.
 
 † **Not a typo, and the most important number in this table.** Nemotron has
 since been run **thirteen** times on the identical tasks, scoring anywhere from
@@ -123,6 +137,13 @@ Qwen3.6-35B-A3B that reached 86 also produced 64 and 67 on two earlier runs.
 **Being fast does not cost you points; it does not buy you consistency
 either.** The vertical extent of a bar, not its position, is what should decide
 whether you would rely on a configuration.
+
+Two models added later sit at the ends of this picture. Qwen3.8-Flash-Next is
+the only point here whose repeated runs land on the same value — two runs, 86
+both times, at 23.7 end-to-end tokens per second. **GLM-5.3-Flash is
+deliberately not plotted:** its 9 is the score of the untouched seed, so
+placing it on a score axis would assert something the measurement does not
+support.
 
 ## Hardware
 
@@ -218,6 +239,86 @@ each by building something that works instead of what was specified. One wrote
 
 → [**The benchmark and what it found**](benchmark.md) — task design, per-task
 results, and the three defects in detail.
+
+## Two GGUF models on llama.cpp
+
+Everything above ran on vLLM. These two ran on `llama-server`, both at 65,536
+context, `--parallel 1 --no-mmap --jinja`, both far larger on disk than
+anything in the original round — and they landed at opposite ends of the
+result.
+
+| | Qwen3.8-Flash-Next | GLM-5.3-Flash |
+|---|---|---|
+| Architecture | MoE, 125B total / 6B active | MoE, 177B total |
+| Quantisation | Unsloth UD-Q3_K_XL, 84 GB | Unsloth UD-IQ1_S, 87 GB |
+| Generation | 29.0 tok/s | 18.8 tok/s |
+| End-to-end (16.8k in) | 23.7 tok/s | 17.7 tok/s |
+| Hidden tests | **86 / 86**, twice | 9 / 86 — the seed's own score |
+| Wall clock | 33:33 and 38:24 | 35:28 |
+
+### Qwen3.8-Flash-Next: the first model to repeat a perfect score
+
+Two consecutive opencode runs, 86/86 both times. That has not happened before
+in this collection. Ornith needed two attempts (69, then 86); Qwen3.6-35B-A3B
+produced 64 and 67 before its 86; Nemotron has scored anywhere from 47 to 85
+across thirteen runs. **The variation here is wall clock only** — and almost
+all of it sits in one task, `t3-neubau`, at 779 s against 1319 s.
+
+It is not the fastest perfect run: Qwen3.6-35B-A3B at NVFP4 still holds that
+at 21:01 and 57.9 end-to-end tokens per second. But at 29.0 tok/s it beats
+Laguna's 30:56 while scoring the same, and it does it as a 6B-active model
+read from a 3-bit GGUF.
+
+**Two runs are not a distribution.** The model that looks most consistent here
+is the one with the fewest runs behind it, which is exactly the trap
+[one run is not a measurement](variance.md#one-run-is-not-a-measurement)
+describes. Read the pair as "did not fall over twice", not as "reliable".
+
+### GLM-5.3-Flash: a model that does not drive the loop
+
+Under opencode it scored 9/86, and the transcripts say why the number is not
+about coding ability:
+
+| Task | Wall clock | Hidden | Tool lines | Transcript |
+|---|---|---|---|---|
+| t1-debug | 504 s | 9/15 | 3 | 683 B |
+| t2-refactor | 569 s | 0/17 | 6 | 1,137 B |
+| t3-neubau | 513 s | 0/33 | 0 | 35 B — the banner, nothing else |
+| t4-feature | 542 s | 0/21 | 7 | 505 B |
+
+It reads a few files and stops. No edit, no test run, exit code 0 every time.
+
+**The nine points are not its own.** The `t1-debug` seed passes 9 of its 15
+hidden tests before any model touches it — the task is to find the remaining
+bugs. The other three seeds score zero, two of them because the hidden suite
+cannot even import what is there. So the row totals the seed and nothing else.
+
+**What was ruled out.** No error in the opencode log during the window, none
+in the llama.cpp log. A single tool-call request sent by hand against the same
+server returns a well-formed `tool_calls` block after 43 tokens, so tool
+calling works. One hypothesis fitted the suspiciously uniform 504–569 s
+exactly — 8,192 output tokens at 18.8 tok/s is 436 s, so the model might have
+been spending its whole output budget on reasoning — and that hand-sent
+request refuted it: 43 completion tokens, 102 characters of reasoning.
+
+Most of all: **the same engine, the same flags and the same harness produced
+86/86 with Qwen3.8-Flash-Next an hour later.** That removes the loop, the
+server and the machine from the list of suspects.
+
+A second harness separates model from loop, so GLM was run again under the
+Hermes agent, same tasks, `--max-turns 80`. It failed in the opposite manner:
+instead of stopping after five minutes it ground on until the 90-minute cap cut
+it off (exit 124), against 158 s for Qwen3.8-Flash on the same task. **And it
+finished at 9/15 — the seed's score again.** Ninety minutes of work, nothing
+the hidden suite can see. Two harnesses, two opposite failure modes, the same
+zero contribution.
+
+**So this row is a finding about a configuration, not a ranking of a model.**
+Something about this build, this quantisation or this chat template does not
+survive contact with an agent loop. IQ1_S is an aggressive quantisation and
+the obvious suspect, but nothing here tests that — a run at a larger
+quantisation would, and has not been done. Until then, 9/86 means "did not
+work here", and that is all it means.
 
 ### Also here
 

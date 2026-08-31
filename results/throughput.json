@@ -96,6 +96,22 @@
       "generation_tok_s": 78.4,
       "end_to_end_tok_s": 58.9,
       "end_to_end_input_tokens": 16862
+    },
+    "qwen38flash": {
+      "name": "Qwen3.8-Flash-Next (UD-Q3_K_XL)",
+      "engine": "llama.cpp llama-server",
+      "speculative_decoding": false,
+      "generation_tok_s": 29.0,
+      "end_to_end_tok_s": 23.7,
+      "end_to_end_input_tokens": 16851
+    },
+    "glm53flash": {
+      "name": "GLM-5.3-Flash (UD-IQ1_S)",
+      "engine": "llama.cpp llama-server (glm5next branch)",
+      "speculative_decoding": false,
+      "generation_tok_s": 18.8,
+      "end_to_end_tok_s": 17.7,
+      "end_to_end_input_tokens": 16847
     }
   }
 }

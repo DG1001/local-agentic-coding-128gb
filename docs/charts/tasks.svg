@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="760" height="408" viewBox="0 0 760 408" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="468" viewBox="0 0 760 468" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif">
 <title>Where the points are lost</title>
 <text x="0" y="20" font-size="14" font-weight="600" fill="#7d8590">Where the points are lost</text>
 <text x="0" y="38" font-size="11" fill="#6e7781">faint = not passed · opencode, one run per model</text>
@@ -38,43 +38,56 @@
 <rect x="413.7" y="213" width="168.8" height="15" fill="#1a7f37"/>
 <rect x="582.6" y="213" width="107.4" height="15" fill="#bf8700"/>
 <text x="698.0" y="225" font-size="11" fill="#7d8590">86</text>
-<text x="242" y="254" font-size="12" text-anchor="end" fill="#7d8590">KAT-Coder-V2.5-Dev</text>
+<text x="242" y="254" font-size="12" text-anchor="end" fill="#7d8590">Qwen3.8-Flash-Next (UD-Q3_K_XL)</text>
 <rect x="250.0" y="243" width="76.7" height="15" fill="#2f81f7"/>
 <rect x="326.7" y="243" width="87.0" height="15" fill="#8250df"/>
-<rect x="413.7" y="243" width="158.6" height="15" fill="#1a7f37"/>
-<rect x="572.3" y="243" width="10.2" height="15" fill="#1a7f37" opacity="0.15"/>
+<rect x="413.7" y="243" width="168.8" height="15" fill="#1a7f37"/>
 <rect x="582.6" y="243" width="107.4" height="15" fill="#bf8700"/>
-<text x="698.0" y="255" font-size="11" fill="#7d8590">84</text>
-<text x="242" y="284" font-size="12" text-anchor="end" fill="#7d8590">Qwen-AgentWorld-35B-A3B</text>
+<text x="698.0" y="255" font-size="11" fill="#7d8590">86</text>
+<text x="242" y="284" font-size="12" text-anchor="end" fill="#7d8590">KAT-Coder-V2.5-Dev</text>
 <rect x="250.0" y="273" width="76.7" height="15" fill="#2f81f7"/>
-<rect x="326.7" y="273" width="71.6" height="15" fill="#8250df"/>
-<rect x="398.4" y="273" width="15.3" height="15" fill="#8250df" opacity="0.15"/>
-<rect x="413.7" y="273" width="153.5" height="15" fill="#1a7f37"/>
-<rect x="567.2" y="273" width="15.3" height="15" fill="#1a7f37" opacity="0.15"/>
+<rect x="326.7" y="273" width="87.0" height="15" fill="#8250df"/>
+<rect x="413.7" y="273" width="158.6" height="15" fill="#1a7f37"/>
+<rect x="572.3" y="273" width="10.2" height="15" fill="#1a7f37" opacity="0.15"/>
 <rect x="582.6" y="273" width="107.4" height="15" fill="#bf8700"/>
-<text x="698.0" y="285" font-size="11" fill="#7d8590">80</text>
-<text x="242" y="314" font-size="12" text-anchor="end" fill="#7d8590">Qwen3.6-35B-A3B</text>
+<text x="698.0" y="285" font-size="11" fill="#7d8590">84</text>
+<text x="242" y="314" font-size="12" text-anchor="end" fill="#7d8590">Qwen-AgentWorld-35B-A3B</text>
 <rect x="250.0" y="303" width="76.7" height="15" fill="#2f81f7"/>
-<rect x="326.7" y="303" width="87.0" height="15" fill="#8250df" opacity="0.15"/>
-<rect x="413.7" y="303" width="163.7" height="15" fill="#1a7f37"/>
-<rect x="577.4" y="303" width="5.1" height="15" fill="#1a7f37" opacity="0.15"/>
+<rect x="326.7" y="303" width="71.6" height="15" fill="#8250df"/>
+<rect x="398.4" y="303" width="15.3" height="15" fill="#8250df" opacity="0.15"/>
+<rect x="413.7" y="303" width="153.5" height="15" fill="#1a7f37"/>
+<rect x="567.2" y="303" width="15.3" height="15" fill="#1a7f37" opacity="0.15"/>
 <rect x="582.6" y="303" width="107.4" height="15" fill="#bf8700"/>
-<text x="698.0" y="315" font-size="11" fill="#7d8590">68</text>
-<text x="242" y="344" font-size="12" text-anchor="end" fill="#7d8590">Nemotron-3.5-Lightning</text>
-<rect x="250.0" y="333" width="71.6" height="15" fill="#2f81f7"/>
-<rect x="321.6" y="333" width="5.1" height="15" fill="#2f81f7" opacity="0.15"/>
+<text x="698.0" y="315" font-size="11" fill="#7d8590">80</text>
+<text x="242" y="344" font-size="12" text-anchor="end" fill="#7d8590">Qwen3.6-35B-A3B</text>
+<rect x="250.0" y="333" width="76.7" height="15" fill="#2f81f7"/>
 <rect x="326.7" y="333" width="87.0" height="15" fill="#8250df" opacity="0.15"/>
 <rect x="413.7" y="333" width="163.7" height="15" fill="#1a7f37"/>
 <rect x="577.4" y="333" width="5.1" height="15" fill="#1a7f37" opacity="0.15"/>
-<rect x="582.6" y="333" width="87.0" height="15" fill="#bf8700"/>
-<rect x="669.5" y="333" width="20.5" height="15" fill="#bf8700" opacity="0.15"/>
-<text x="698.0" y="345" font-size="11" fill="#7d8590">63</text>
-<rect x="250" y="378" width="11" height="11" rx="2" fill="#2f81f7"/>
-<text x="266" y="388" font-size="11" fill="#6e7781">t1-debug 15</text>
-<rect x="380" y="378" width="11" height="11" rx="2" fill="#8250df"/>
-<text x="396" y="388" font-size="11" fill="#6e7781">t2-refactor 17</text>
-<rect x="510" y="378" width="11" height="11" rx="2" fill="#1a7f37"/>
-<text x="526" y="388" font-size="11" fill="#6e7781">t3-neubau 33</text>
-<rect x="640" y="378" width="11" height="11" rx="2" fill="#bf8700"/>
-<text x="656" y="388" font-size="11" fill="#6e7781">t4-feature 21</text>
+<rect x="582.6" y="333" width="107.4" height="15" fill="#bf8700"/>
+<text x="698.0" y="345" font-size="11" fill="#7d8590">68</text>
+<text x="242" y="374" font-size="12" text-anchor="end" fill="#7d8590">Nemotron-3.5-Lightning</text>
+<rect x="250.0" y="363" width="71.6" height="15" fill="#2f81f7"/>
+<rect x="321.6" y="363" width="5.1" height="15" fill="#2f81f7" opacity="0.15"/>
+<rect x="326.7" y="363" width="87.0" height="15" fill="#8250df" opacity="0.15"/>
+<rect x="413.7" y="363" width="163.7" height="15" fill="#1a7f37"/>
+<rect x="577.4" y="363" width="5.1" height="15" fill="#1a7f37" opacity="0.15"/>
+<rect x="582.6" y="363" width="87.0" height="15" fill="#bf8700"/>
+<rect x="669.5" y="363" width="20.5" height="15" fill="#bf8700" opacity="0.15"/>
+<text x="698.0" y="375" font-size="11" fill="#7d8590">63</text>
+<text x="242" y="404" font-size="12" text-anchor="end" fill="#7d8590">GLM-5.3-Flash (UD-IQ1_S)</text>
+<rect x="250.0" y="393" width="46.0" height="15" fill="#2f81f7"/>
+<rect x="296.0" y="393" width="30.7" height="15" fill="#2f81f7" opacity="0.15"/>
+<rect x="326.7" y="393" width="87.0" height="15" fill="#8250df" opacity="0.15"/>
+<rect x="413.7" y="393" width="168.8" height="15" fill="#1a7f37" opacity="0.15"/>
+<rect x="582.6" y="393" width="107.4" height="15" fill="#bf8700" opacity="0.15"/>
+<text x="698.0" y="405" font-size="11" fill="#7d8590">9</text>
+<rect x="250" y="438" width="11" height="11" rx="2" fill="#2f81f7"/>
+<text x="266" y="448" font-size="11" fill="#6e7781">t1-debug 15</text>
+<rect x="380" y="438" width="11" height="11" rx="2" fill="#8250df"/>
+<text x="396" y="448" font-size="11" fill="#6e7781">t2-refactor 17</text>
+<rect x="510" y="438" width="11" height="11" rx="2" fill="#1a7f37"/>
+<text x="526" y="448" font-size="11" fill="#6e7781">t3-neubau 33</text>
+<rect x="640" y="438" width="11" height="11" rx="2" fill="#bf8700"/>
+<text x="656" y="448" font-size="11" fill="#6e7781">t4-feature 21</text>
 </svg>

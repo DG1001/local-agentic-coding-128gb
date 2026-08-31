@@ -559,5 +559,141 @@
     "total_pytest_runs": 30,
     "total_tool_calls": null,
     "total_own_tests": null
+  },
+  "qwen38flash": {
+    "name": "Qwen3.8-Flash-Next (UD-Q3_K_XL)",
+    "architecture": "MoE, 125B total / 6B active",
+    "precision": "Unsloth UD-Q3_K_XL (GGUF)",
+    "weights_gb_on_disk": 84,
+    "engine": "llama.cpp llama-server (b10695-8-g0b5be7e), -c 65536 -ngl 99 --parallel 1 --no-mmap --jinja",
+    "note": "First model here measured on llama.cpp rather than vLLM, and the first to reach 86/86 on two consecutive opencode runs — 33:33 and 38:24. No task lost a point in either run; the spread is entirely in wall clock, and almost entirely in t3-neubau (779 s against 1319 s, a factor of 1.7). Architecture support landed in llama.cpp only days before this run (qwen4exp); before that the checkpoint sat on disk unloadable.",
+    "tool_call_counts": "not reported: opencode's transcript markers differ again from both the original round and the Ornith run, so counting them would produce numbers that are not comparable. The own-suite column below is read from pytest, not from markers.",
+    "runs": 2,
+    "tasks": {
+      "t1-debug": {
+        "seconds": 264,
+        "exit_code": 0,
+        "hidden_passed": 15,
+        "hidden_total": 15,
+        "own_suite": 9
+      },
+      "t2-refactor": {
+        "seconds": 371,
+        "exit_code": 0,
+        "hidden_passed": 17,
+        "hidden_total": 17,
+        "own_suite": 18
+      },
+      "t3-neubau": {
+        "seconds": 779,
+        "exit_code": 0,
+        "hidden_passed": 33,
+        "hidden_total": 33,
+        "own_suite": 42
+      },
+      "t4-feature": {
+        "seconds": 599,
+        "exit_code": 0,
+        "hidden_passed": 21,
+        "hidden_total": 21,
+        "own_suite": 29
+      }
+    },
+    "second_run_tasks": {
+      "t1-debug": {
+        "seconds": 158,
+        "exit_code": 0,
+        "hidden_passed": 15,
+        "hidden_total": 15
+      },
+      "t2-refactor": {
+        "seconds": 237,
+        "exit_code": 0,
+        "hidden_passed": 17,
+        "hidden_total": 17
+      },
+      "t3-neubau": {
+        "seconds": 1319,
+        "exit_code": 0,
+        "hidden_passed": 33,
+        "hidden_total": 33
+      },
+      "t4-feature": {
+        "seconds": 590,
+        "exit_code": 0,
+        "hidden_passed": 21,
+        "hidden_total": 21
+      }
+    },
+    "total_seconds": 2013,
+    "total_hidden_passed": 86,
+    "total_hidden": 86,
+    "total_read_search_calls": null,
+    "total_pytest_runs": null,
+    "total_tool_calls": null,
+    "total_own_tests": 98
+  },
+  "glm53flash": {
+    "name": "GLM-5.3-Flash (UD-IQ1_S)",
+    "architecture": "MoE, 177B total (n_params from the GGUF metadata)",
+    "precision": "Unsloth UD-IQ1_S (GGUF), 87 GB on disk",
+    "weights_gb_on_disk": 87,
+    "engine": "llama.cpp llama-server (glm5next branch), -c 65536 -ngl 99 --parallel 1 --no-mmap --jinja",
+    "note": "Did not drive an agent loop, in either harness. Under opencode it read three to seven files per task and stopped: no edit, no test run, exit code 0, transcripts of 35-1137 bytes. Under the Hermes agent it did the opposite and ground on until the 90-minute cap (exit 124). BOTH ended at the seed's own score: t1-debug's untouched seed passes 9 of 15 hidden tests, the other three seeds score zero, so 9/86 is the baseline and the model contributed nothing. Ruled out: no error in the opencode log or the llama.cpp log; a hand-sent request with tools returns a well-formed tool_calls block after 43 tokens; and the same server with the same flags and the same harness produced 86/86 with Qwen3.8-Flash-Next an hour later. Cause unknown. IQ1_S is the obvious suspect and is NOT tested by anything here.",
+    "seed_baseline": {
+      "t1-debug": 9,
+      "t2-refactor": 0,
+      "t3-neubau": 0,
+      "t4-feature": 0,
+      "total": 9
+    },
+    "tasks": {
+      "t1-debug": {
+        "seconds": 504,
+        "exit_code": 0,
+        "hidden_passed": 9,
+        "hidden_total": 15,
+        "tool_lines": 3
+      },
+      "t2-refactor": {
+        "seconds": 569,
+        "exit_code": 0,
+        "hidden_passed": 0,
+        "hidden_total": 17,
+        "tool_lines": 6
+      },
+      "t3-neubau": {
+        "seconds": 513,
+        "exit_code": 0,
+        "hidden_passed": 0,
+        "hidden_total": 33,
+        "tool_lines": 0
+      },
+      "t4-feature": {
+        "seconds": 542,
+        "exit_code": 0,
+        "hidden_passed": 0,
+        "hidden_total": 21,
+        "tool_lines": 7
+      }
+    },
+    "second_harness": {
+      "harness": "hermes",
+      "max_turns": 80,
+      "t1-debug": {
+        "seconds": 5402,
+        "exit_code": 124,
+        "hidden_passed": 9,
+        "hidden_total": 15
+      },
+      "note": "Cut off by the 90-minute cap; the remaining tasks were not run."
+    },
+    "total_seconds": 2128,
+    "total_hidden_passed": 9,
+    "total_hidden": 86,
+    "total_read_search_calls": null,
+    "total_pytest_runs": null,
+    "total_tool_calls": 16,
+    "total_own_tests": null
   }
 }
