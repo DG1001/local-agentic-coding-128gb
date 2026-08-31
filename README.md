@@ -231,7 +231,7 @@ the same task in three different ways, each with a green self-written suite,
 each by building something that works instead of what was specified. One wrote
 125 passing tests and scored 68/86.
 
-![Hidden tests passed per task](docs/charts/tasks.svg)
+![Hidden tests passed per task](docs/charts/hidden-tests.svg)
 
 → [**The benchmark and what it found**](docs/benchmark.md) — task design, per-task
 results, and the three defects in detail.

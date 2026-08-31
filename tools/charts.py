@@ -290,7 +290,7 @@ def main():
              for _, v2 in reihenfolge]
     p = gestapelt(daten, "Where the points are lost",
                   "faint = not passed · opencode, one run per model",
-                  "tasks.svg")
+                  "hidden-tests.svg")
     print("written:", p.relative_to(WURZEL))
 
 
