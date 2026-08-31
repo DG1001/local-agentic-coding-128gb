@@ -13,6 +13,15 @@
 #   model-switch nemotron     Nemotron-3.5-Light. :8889  (vLLM)
 #   model-switch nemotronspec dasselbe + DSpark   :8889  (vLLM 0.27.1)
 #   model-switch qwen36moe    Qwen3.6-35B-A3B     :8889  (vLLM)
+#   model-switch qwen38       Qwen3.8-27B dicht   :8889  (vLLM, NVFP4 + MTP)
+#   model-switch ornith       Ornith-1.5-35B-A3B  :8889  (vLLM, NVFP4)
+#   model-switch ornith-voice dito, Dauerbetrieb  :8889  (vLLM, 0.55)
+#   model-switch qwen36nvfp4  Qwen3.6-35B-A3B     :8889  (vLLM, NVFP4 statt FP8)
+#   model-switch qwen36nvfp4-voice dito, Dauerbetrieb :8889  (vLLM, 0.55)
+#   model-switch qwenvl       Qwen3-VL-32B        :8889  (vLLM, sieht Bilder)
+#   model-switch qwenvl30     Qwen3-VL-30B-A3B    :8889  (dasselbe als MoE)
+#   model-switch qwen38flash  Qwen3.8-Flash-Next  :8889  (llama.cpp, GGUF, ctx 64k)
+#   model-switch glm53flash   GLM-5.3-Flash       :8889  (llama.cpp/unsloth, IQ1_S)
 #   model-switch stop         alles stoppen
 #   model-switch status       was laeuft gerade
 #
@@ -36,6 +45,9 @@ load_spec() {
     # ABBILD_UEBER erlaubt denselben Modelleintrag auf einem anderen vLLM --
     # gebraucht fuer den Gegentest "gleiche Version, nur ohne DSpark".
     ABBILD="${ABBILD_UEBER:-$IMAGE}"
+    # VERZ_UEBER zeigt denselben Eintrag auf ein anderes Modellverzeichnis --
+    # gebraucht, wenn ein Abzug nachbearbeitet werden musste und beide
+    # Fassungen nebeneinander liegen bleiben sollen.
     case "$1" in
         nemotronspec)
             # Das Rezept aus der Modellkarte, woertlich -- inklusive der
@@ -89,12 +101,162 @@ load_spec() {
                    --tool-call-parser qwen3_coder
                    --enable-auto-tool-choice) ;;
 
+        qwenvl30)
+            # Dieselbe Familie wie qwenvl, aber MoE statt dicht: 30B gesamt,
+            # 3B aktiv. Fast gleiche Dateigroesse (32,3 statt 33,9 GB), aber
+            # rechnerisch ein Elftel der Bytes je Token.
+            #
+            # Angelegt, nachdem auffiel, dass ich beim ersten Bildmodell nach
+            # "32B klingt gruendlich" gegriffen hatte, statt die Bauart
+            # anzusehen -- genau der Fehler, vor dem der eigene Pruefstands-
+            # bericht warnt.
+            ABBILD=vllm/vllm-openai:v0.27.1
+            # -gedreht, nicht der Abzug von der Modellkarte: dessen Blockskalen
+            # liegen in der Anordnung des gebuendelten Expertenformats vor,
+            # und vLLM dreht beim Laden zwar die Gewichte, nicht aber die
+            # Skalen ([128,6,16] gegen erwartete [128,16,6]). Die Kopie hat
+            # die 96 betroffenen Tensoren vorab gedreht. Repariert vLLM das
+            # eines Tages, scheitert der Start laut -- nicht still.
+            DIR=Qwen3-VL-30B-A3B-Instruct-FP8-gedreht; SERVED=qwen3-vl-30b-a3b; DEF_CTX=65536
+            EXTRA=(--limit-mm-per-prompt '{"image":2}'
+                   --tool-call-parser qwen3_xml
+                   --reasoning-parser qwen3) ;;
+
+        qwenvl)
+            # Qwen3-VL-32B in FP8 -- das einzige Bildmodell hier. Gebraucht fuer
+            # Abbildungen in Dokumenten: keiner der anderen Checkpoints bringt
+            # Bildgewichte mit, wir starten mehrere sogar ausdruecklich mit
+            # --language-model-only, weil sie eine vision_config tragen und
+            # trotzdem keine visual.*-Tensoren haben.
+            #
+            # 35,5 GB statt 66,7 in BF16. Bei Dokumentbildern (Screenshots,
+            # Diagramme) faellt FP8 kaum ins Gewicht -- anders als bei feiner
+            # Bildaesthetik, um die es hier nicht geht.
+            ABBILD=vllm/vllm-openai:v0.27.1
+            DIR=Qwen3-VL-32B-Instruct-FP8; SERVED=qwen3-vl-32b; DEF_CTX=65536
+            # Eine Seite je Anfrage genuegt und haelt den Bildspeicher klein.
+            # --tool-call-parser wird hier nicht gebraucht -- wir stellen dem
+            # Modell keine Werkzeuge. vLLM verlangt ihn aber, sobald
+            # --enable-auto-tool-choice gesetzt ist, und das setzt start_vllm
+            # fuer alle Modelle.
+            EXTRA=(--limit-mm-per-prompt '{"image":2}'
+                   --tool-call-parser qwen3_xml
+                   --reasoning-parser qwen3) ;;
+
+        qwen38)
+            # Qwen3.8-27B, dicht, in Unsloths NVFP4 -- das Rezept von MiaAI-Lab
+            # (github.com/MiaAI-Lab/Qwen3.8-27B-DGX-Spark-RTX-6000), derselben
+            # Quelle wie ds4-server.
+            #
+            # Interessant ist es NICHT wegen der Geschwindigkeit: 22,6 GB durch
+            # 273 GB/s sind rechnerisch 12,1 tok/s, und die berichteten ~20
+            # kommen nur durch MTP zustande. Damit liegt es unter jedem MoE der
+            # Tabelle. Interessant ist die Frage, ob ein dichtes 27B bei 20 tok/s
+            # wieder benutzbar wird -- das dichte Qwen3.6-27B hatte 86/86, war
+            # aber mit 4,4 tok/s unbrauchbar.
+            DIR=Qwen3.8-27B-NVFP4; SERVED=qwen3.8-27b
+            # BEWUSST OHNE YaRN. Das Rezept dehnt ueber --hf-overrides auf 1M,
+            # und die Modellkarte sagt dazu selbst, statisches YaRN koenne die
+            # Qualitaet bei KURZEM Kontext druecken. Unsere Aufgaben sind kurz,
+            # und die nativen 262144 sind ohnehin doppelt so viel wie wir nutzen.
+            DEF_CTX=131072
+            EXTRA=(--quantization compressed-tensors
+                   --attention-backend triton_attn
+                   --speculative-config '{"method":"mtp","num_speculative_tokens":2}'
+                   --reasoning-parser qwen3
+                   --tool-call-parser qwen3_coder)
+            # Der Checkpoint bringt sein eigenes FP8-Schema fuer den KV-Cache mit;
+            # unsere Vorgabe fp8 wuerde es ueberschreiben.
+            KV_DTYPE=${KV_DTYPE:-auto}
+            GPU_UTIL=${GPU_UTIL:-0.84} ;;
+
+        ornith)
+            # Ornith-1.5-35B-A3B in NVFP4, MIT, erschienen am 19.08.2026.
+            # Dieselbe Bauart und dieselbe Groesse wie qwen36nvfp4 -- 35B
+            # gesamt, 3B aktiv, 23,5 GB -- und damit der saubere Vergleich:
+            # gleiche Klasse, gleiche Hardware, gleiche Parser, anderes
+            # Training. Die Modellkarte nennt qwen3_xml und qwen3, weil die
+            # Architektur von Qwen3.5-MoE stammt.
+            DIR=Ornith-1.5-35B-A3B-NVFP4; SERVED=ornith-1.5-35b-a3b; DEF_CTX=131072
+            EXTRA=(--tool-call-parser qwen3_xml --reasoning-parser qwen3) ;;
+
+        ornith-voice)
+            # Dasselbe Modell wie ornith, aber fuer den Dauerbetrieb als
+            # Sprachassistent (Projekt kihiwi) statt fuer den Pruefstand.
+            #
+            # Ein einzelner Sprecher braucht weder 131072 Kontext noch den
+            # KV-Cache dazu. Ornith kostet 40 KB je Token (40 Lagen, 2
+            # KV-Koepfe, head_dim 256, fp8) -- eine 131k-Sequenz also 5,2 GB,
+            # eine 32k-Sequenz 1,3 GB. Mit ctx 32768 und 0.55 bleiben 41,9 GiB
+            # KV-Cache und 110-fache Nebenlaeufigkeit, immer noch weit mehr als
+            # gebraucht, und rund 40 GiB frei fuer whisper.cpp, Piper und den
+            # Rest des Sprachdienstes. Mit den Pruefstands-Vorgaben
+            # (131072/0.85) waren 110 von 121 GiB belegt und 6 GiB Swap in
+            # Benutzung; nach der Umstellung am 27.08.2026 noch 1,4 GiB.
+            #
+            # SERVED bleibt bewusst 'ornith-1.5-35b-a3b': Clients sollen beim
+            # Wechsel zwischen Pruefstand und Sprachbetrieb nichts umstellen
+            # muessen. Wer wissen will, welches Profil laeuft, sieht es am
+            # Kontext in 'model-switch status'.
+            # 131072: Hermes verlangt MINDESTENS 64K, aber 64K ist seine
+            # Untergrenze, nicht sein Arbeitsbereich -- bei 65536 scheiterte er
+            # mit "Context length exceeded: max compression attempts reached"
+            # und reichte die Fehlermeldung als Rechercheergebnis durch.
+            # Kostet nichts: bei ~12 KB KV je Token bleiben rund 26 gleichzeitige
+            # Sequenzen, weit mehr als ein Sprecher braucht.
+            DIR=Ornith-1.5-35B-A3B-NVFP4; SERVED=ornith-1.5-35b-a3b; DEF_CTX=131072
+            GPU_UTIL=${GPU_UTIL:-0.55}
+            EXTRA=(--tool-call-parser qwen3_xml --reasoning-parser qwen3) ;;
+
         qwen36moe)
             # Das Qwen-MoE, das in der Tabelle fehlte: 35B gesamt, 3B aktiv --
             # dieselbe Bauart, die auf dieser Hardware gewinnt. Getestet hatten
             # wir bisher nur eine Ableitung davon (AgentWorld) und das dichte 27B.
             DIR=Qwen3.6-35B-A3B-FP8; SERVED=qwen3.6-35b-a3b; DEF_CTX=131072
             EXTRA=(--tool-call-parser qwen3_xml --reasoning-parser qwen3) ;;
+
+        qwen36nvfp4)
+            # Dasselbe Modell wie qwen36moe, nur in NVIDIAs NVFP4 statt FP8:
+            # 23,4 statt 35 GB. Damit ist es der einzige direkte Vergleich in
+            # dieser Sammlung, was schaerferes Quantisieren beim GLEICHEN Modell
+            # kostet -- ein Vorbehalt, der bisher nur in den Einschraenkungen
+            # steht. Rechnerisch halbieren sich die Bytes je aktivem Parameter
+            # (3B: 3,0 -> 1,5 GB), FP8 mass 50,0 tok/s.
+            DIR=Qwen3.6-35B-A3B-NVFP4; SERVED=qwen3.6-35b-a3b-nvfp4; DEF_CTX=131072
+            # Der Index nennt 124468 Tensoren und KEINEN einzigen visual.* --
+            # bei vorhandener vision_config. Ohne den Schalter baut vLLM den
+            # Vision-Turm und bricht mit "Following weights were not initialized
+            # from checkpoint" ab, wie schon bei KAT und AgentWorld. Die
+            # FP8-Fassung kam ohne aus; verlassen kann man sich darauf nicht.
+            EXTRA=(--language-model-only
+                   --tool-call-parser qwen3_xml --reasoning-parser qwen3) ;;
+
+        qwen36nvfp4-voice)
+            # Dasselbe Modell wie qwen36nvfp4, aber fuer den Dauerbetrieb als
+            # Sprachassistent -- dieselbe Ueberlegung wie bei ornith-voice.
+            #
+            # vLLM reserviert GPU_UTIL mal 121 GiB VORAB, unabhaengig von der
+            # Groesse der Gewichte. Mit den Pruefstands-Vorgaben (0.85) bleiben
+            # rund 11 GiB fuer alles andere, und die Maschine swappt waehrend
+            # der Assistent antworten soll. Neben dem Sprachmodell laufen
+            # whisper.cpp mit CUDA, Piper, sherpa-onnx fuer die Sprechertrennung,
+            # der Sprachdienst und seit dem Vektorindex ein Einbettungsmodell
+            # mit 2,24 GB -- alles im selben Unified Memory. Mit 0.55 bleiben
+            # rund 37 GiB frei.
+            #
+            # Kontext bleibt 131072: Hermes scheiterte bei 65536 mit
+            # "Context length exceeded" und reichte die Fehlermeldung als
+            # Rechercheergebnis durch.
+            #
+            # SERVED bleibt bewusst identisch zu qwen36nvfp4: Clients sollen
+            # beim Wechsel zwischen Pruefstand und Sprachbetrieb nichts
+            # umstellen muessen. Am Kontext sind die beiden Profile NICHT zu
+            # unterscheiden, nur an der Speicherreservierung --
+            # `docker inspect vllm-model` zeigt sie.
+            DIR=Qwen3.6-35B-A3B-NVFP4; SERVED=qwen3.6-35b-a3b-nvfp4; DEF_CTX=131072
+            GPU_UTIL=${GPU_UTIL:-0.55}
+            EXTRA=(--language-model-only
+                   --tool-call-parser qwen3_xml --reasoning-parser qwen3) ;;
 
         laguna)
             DIR=Laguna-S-2.1-NVFP4; SERVED=laguna-s-2.1; DEF_CTX=65536
@@ -117,6 +279,10 @@ load_spec() {
             EXTRA=(--tool-call-parser qwen3_xml --reasoning-parser qwen3) ;;
         *)  return 1 ;;
     esac
+    # VERZ_UEBER zeigt denselben Eintrag auf ein anderes Modellverzeichnis --
+    # gebraucht, wenn ein Abzug nachbearbeitet werden musste und beide
+    # Fassungen nebeneinander liegen bleiben.
+    DIR="${VERZ_UEBER:-$DIR}"
     return 0
 }
 
@@ -168,6 +334,76 @@ wait_ready() {
 }
 
 # ---------------------------------------------------------------- Starten
+stop_llama() {
+    # -x auf den Prozessnamen, nicht -f auf die Befehlszeile: mit -f trifft
+    # es jede Shell, in deren Zeile der Pfad vorkommt -- einschliesslich
+    # der eigenen. Genau daran ist die erste Fassung gestorben.
+    pgrep -x llama-server >/dev/null 2>&1 || return 0
+    echo "Stoppe llama-server ..."
+    pkill -x llama-server
+    for _ in $(seq 1 40); do pgrep -x llama-server >/dev/null 2>&1 || break; sleep 1; done
+    pgrep -x llama-server >/dev/null 2>&1 && { pkill -9 -x llama-server; sleep 2; }
+    # Auf die Freigabe des Speichers warten, nicht nur auf das Verschwinden des
+    # Prozesses. Ein Neustart direkt danach ist einmal still gescheitert: der
+    # alte Server hielt seine 89 GiB noch, der neue begann zu laden und wurde
+    # nach vier Sekunden ohne Fehlerzeile weggeraeumt.
+    local frei
+    for _ in $(seq 1 30); do
+        frei=$(awk '/^MemAvailable:/{print int($2/1048576)}' /proc/meminfo)
+        [ "${frei:-0}" -ge 100 ] && break
+        sleep 2
+    done
+    return 0
+}
+
+# GGUF laeuft ueber llama.cpp, nicht ueber vLLM -- und bewusst auf demselben
+# Port 8889 wie die vLLM-Modelle. Sie schliessen einander ohnehin aus, und so
+# funktioniert jeder Client weiter, der "das lokale Modell liegt auf 8889"
+# gelernt hat, ohne Umkonfiguration.
+start_llama() {
+    local gguf="$LLAMA_GGUF"
+    [ -f "$gguf" ] || { echo "FEHLER: $gguf fehlt"; exit 1; }
+    stop_ds4; stop_vllm; stop_llama
+    echo "Starte llama-server ($LLAMA_NAME, ctx ${CTX:-65536}, ${PARALLEL:-1} Slot) ..."
+    # --no-mmap: mit mmap laedt der GB10 laut PR ggml-org/llama.cpp#27742
+    #   zehnfach langsamer. Ohne mmap 80 s statt Minuten -- die Gewichte
+    #   passen, solange sonst nichts geladen ist.
+    # --jinja: ohne die modelleigene Vorlage kein sauberes Werkzeugformat,
+    #   und dann taugt es fuer Agenten nicht.
+    # --parallel 1: die Vorgabe von vier Slots teilt den KV-Speicher auf vier
+    #   Anfragen auf, die es hier nicht gibt. Ein einzelner Agent mit langem
+    #   Verlauf findet dann keinen zusammenhaengenden Platz fuer seinen
+    #   Zustand, und im Protokoll steht "failed to restore kv cache" -- jeder
+    #   Zug rechnet den ganzen Zusammenhang neu. Ein Slot mit 65536 kostet
+    #   soviel wie vier mit 16384 und gibt den Kontext am Stueck.
+    setsid "${LLAMA_BIN:-$HOME/code/llama.cpp/build/bin/llama-server}" \
+        -m "$gguf" -c "${CTX:-65536}" -ngl "${NGL:-99}" \
+        --parallel "${PARALLEL:-1}" --no-mmap --jinja \
+        --alias "$LLAMA_NAME" --host 127.0.0.1 --port "$VLLM_PORT" \
+        > "$HOME/llama-server.log" 2>&1 < /dev/null &
+
+    # Eigene Warteschleife statt wait_ready: die dortige Abbruchbedingung
+    # fragt, ob der Docker-Container noch laeuft, und bricht bei einem
+    # gewoehnlichen Prozess sofort mit "CONTAINER GESTOPPT" ab.
+    echo -n "Warte auf $LLAMA_NAME auf :$VLLM_PORT "
+    local i
+    for i in $(seq 1 300); do
+        if curl -sf --max-time 3 "http://127.0.0.1:$VLLM_PORT/v1/models" >/dev/null 2>&1; then
+            echo " bereit."
+            curl -s "http://127.0.0.1:$VLLM_PORT/v1/models" | python3 -c \
+                "import sys,json;[print('  Modell:',m['id']) for m in json.load(sys.stdin)['data']]" 2>/dev/null
+            return 0
+        fi
+        pgrep -x llama-server >/dev/null 2>&1 || {
+            echo " PROZESS WEG."
+            grep -viE '^\s*$' "$HOME/llama-server.log" | tail -12
+            return 1
+        }
+        echo -n "."; sleep 2
+    done
+    echo " nicht bereit geworden."; return 1
+}
+
 start_ds4() {
     stop_vllm; stop_ds4
     echo "Starte ds4-server (DeepSeek-V4-Flash) ..."
@@ -194,8 +430,16 @@ start_vllm() {
     docker rm -f "$CONTAINER" >/dev/null 2>&1 || true
 
     echo "Starte $DIR (${ABBILD##*:}, ctx ${CTX:-$DEF_CTX}) ..."
+    # UMGEBUNG: Liste von NAME=WERT, je Aufruf durchgereicht. Gebraucht, um
+    # einzelne vLLM-Kernel abzuschalten -- auf GB10 scheitert DeepGEMM bei
+    # manchen FP8-Checkpoints mit "Unknown SF transformation", und der einzige
+    # Schalter dafuer ist eine Umgebungsvariable.
+    local UMG=()
+    for kv in ${UMGEBUNG:-}; do UMG+=(-e "$kv"); done
+
     docker run -d --name "$CONTAINER" \
         --gpus all --ipc=host \
+        "${UMG[@]+"${UMG[@]}"}" \
         -v "$MODELS:/models:ro" \
         -v "$HOME/.cache/vllm:/root/.cache/vllm" \
         -p "127.0.0.1:$VLLM_PORT:8000" \
@@ -234,8 +478,27 @@ status() {
 
 case "${1:-status}" in
     ds4)                          start_ds4 ;;
-    laguna|kat|agentworld|qwen27b|nemotron|nemotronspec|qwen36moe) start_vllm "$1" ;;
-    stop)   stop_ds4; stop_vllm; echo "Alles gestoppt."; free -h | awk 'NR==2{print "Frei: "$7}' ;;
+    qwen38flash)
+        LLAMA_GGUF="$HOME/gguf/Qwen3.8-Flash-Next-UD-Q3_K_XL/UD-Q3_K_XL/Qwen3.8-Flash-Next-UD-Q3_K_XL-00001-of-00003.gguf"
+        LLAMA_NAME=qwen3.8-flash-next
+        start_llama ;;
+    glm53flash)
+        # Eigener Bau: die Architektur glm5next steckt bis heute nur in
+        # Unsloths Zweig, im Hauptzweig sind drei Vorschlaege dazu offen.
+        # Deshalb ein zweiter Klon -- der erste bedient die uebrigen GGUFs
+        # und bleibt auf dem offiziellen Stand.
+        LLAMA_BIN="$HOME/code/llama.cpp-glm5next/build/bin/llama-server"
+        LLAMA_GGUF="$HOME/gguf/GLM-5.3-Flash-UD-IQ1_S/UD-IQ1_S/GLM-5.3-Flash-UD-IQ1_S-00001-of-00003.gguf"
+        LLAMA_NAME=glm-5.3-flash
+        # 64k, obwohl 93 GB Gewichte wenig Luft lassen: die hybride lineare
+        # und spaerliche Aufmerksamkeit braucht auffallend wenig KV-Speicher.
+        # Gemessen macht der Sprung von 32k auf 64k genau ein GiB aus -- und
+        # Hermes verweigert den Dienst unter 64000.
+        CTX="${CTX:-65536}"
+        start_llama ;;
+    laguna|kat|agentworld|qwen27b|nemotron|nemotronspec|qwen36moe|qwen38|ornith|ornith-voice|qwen36nvfp4|qwen36nvfp4-voice|qwenvl|qwenvl30)
+            start_vllm "$1" ;;
+    stop)   stop_ds4; stop_vllm; stop_llama; echo "Alles gestoppt."; free -h | awk 'NR==2{print "Frei: "$7}' ;;
     status) status ;;
-    *)      sed -n '2,18p' "$0"; exit 2 ;;
+    *)      sed -n '2,23p' "$0"; exit 2 ;;
 esac
