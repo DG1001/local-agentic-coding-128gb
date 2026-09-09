@@ -455,6 +455,26 @@ start_vllm() {
         --kv-cache-dtype "${KV_DTYPE:-fp8}" \
         --host 0.0.0.0 --port 8000 >/dev/null
     wait_ready "$VLLM_PORT" "$SERVED" 360
+    belegung_melden "$1" "$SERVED"
+}
+
+# Der Belegungsstelle sagen, was jetzt laeuft (github.com/DG1001/modellbelegung).
+# Sie raet nicht selbst -- damit sie auch dann noch antwortet, wenn vLLM haengt.
+#
+# Fehlt der Klient, passiert nichts: die Stelle ist eine Ergaenzung, keine
+# Voraussetzung. Auf einer Maschine ohne sie laeuft model-switch wie zuvor.
+#
+# Bewusst NUR melden, nicht fragen: model-switch ist das Werkzeug, mit dem man
+# von Hand umschaltet, und wer es aufruft, hat sich schon entschieden. Fragen
+# muessen die automatischen Anrufer (Waechter, Agenten) -- sonst haette man
+# ein Werkzeug, das sich weigert, und dafuer gibt es kein Vorbild.
+#
+# Ein Ausfall der Stelle darf hier nichts blockieren: Buchfuehrung ist
+# nachrangig gegenueber dem eigentlichen Zweck.
+belegung_melden() {
+    local k="$HOME/Developer/github.com/modellbelegung/belegung-klient.sh"
+    [ -x "$k" ] || return 0
+    "$k" geladen "$1" "$2" >/dev/null 2>&1 || true
 }
 
 # ---------------------------------------------------------------- Status
