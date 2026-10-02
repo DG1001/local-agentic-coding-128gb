@@ -11,7 +11,9 @@ BASIS="$HOME/bench2"
 ZIEL="$BASIS/runs/$KENNUNG"
 JAJA="$HOME/Developer/github.com/jaja/target/jaja-0.1.0.jar"
 JAVA=/usr/lib/jvm/java-21-openjdk-arm64/bin/java
-AUFGABEN="t1-debug t2-refactor t3-neubau t4-feature"
+# Uebersteuerbar, um eine einzelne Aufgabe nachzufahren:
+#   AUFGABEN=t5-wiki ./run-java.sh kennung modell
+AUFGABEN="${AUFGABEN:-t1-debug t2-refactor t3-neubau t4-feature t5-wiki}"
 # Vor jeder Aufgabe pruefen, ob der Motor ueberhaupt antwortet -- ein
 # haengendes vLLM sieht sonst aus wie ein langsames Modell.
 . "$(dirname "$0")/bereit.sh"
@@ -19,7 +21,20 @@ AUFGABEN="t1-debug t2-refactor t3-neubau t4-feature"
 rm -rf "$ZIEL"; mkdir -p "$ZIEL"
 : > "$ZIEL/ergebnis.tsv"
 
+# Zuggrenze je Aufgabe. t1-t4 bleiben bei 80, damit die veroeffentlichten
+# Zahlen vergleichbar bleiben. t5-wiki bekommt 120: alle drei Modelle des
+# ersten Durchgangs liefen ins Limit, auch das fertige -- bei Nemotron war es
+# die eigentliche Ursache der Null. Mit 80 misst man dort die Zuggrenze,
+# nicht das Modell.
+zuege_fuer() {
+    case "$1" in
+        t5-wiki) echo "${ZUEGE_T5:-120}" ;;
+        *)       echo "${ZUEGE:-80}" ;;
+    esac
+}
+
 for A in $AUFGABEN; do
+    ZUEGE=$(zuege_fuer "$A")
     W="$ZIEL/$A"
     mkdir -p "$W"
 
@@ -49,7 +64,7 @@ for A in $AUFGABEN; do
         --base-url "$BASISURL" \
         --cwd "$W" \
         --prompt-file "$BASIS/tasks/$A/aufgabe.md" \
-        --max-turns 80 \
+        --max-turns "$ZUEGE" \
         > "$ZIEL/$A.log" 2>&1
     RC=$?
     T1=$(date +%s)
@@ -68,6 +83,7 @@ for A in $AUFGABEN; do
         t2-refactor) GESAMT=17 ;;
         t3-neubau)   GESAMT=33 ;;
         t4-feature)  GESAMT=21 ;;
+        t5-wiki)     GESAMT=67 ;;
     esac
 
     # Der Harness meldet die Zahl selbst in der Schlusszeile -- kein Raten

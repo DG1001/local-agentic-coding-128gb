@@ -8,7 +8,7 @@ description: Task design, per-task results, and the defects worth reading.
 
 ## The benchmark
 
-Four tasks, deliberately different in kind, because "extend this module" only
+Five tasks, deliberately different in kind, because "extend this module" only
 tests one skill. Each has a **hidden test suite the model never sees**. The
 model's own claim of success is ignored; only the hidden suite counts.
 
@@ -18,6 +18,7 @@ model's own claim of success is ignored; only the hidden suite counts.
 | `t2-refactor` | Refactor | 17 | Convert a module-global registry into an injectable object while keeping the old module-level API working. Two requirements that pull against each other. |
 | `t3-neubau` | Greenfield | 33 | Empty directory, spec only: a small query engine over tabular data with its own query language, numeric-vs-string comparison, stable sort, fixed evaluation order. |
 | `t4-feature` | Cross-cutting | 21 | Add stock reservations through model, persistence, service and CLI — including keeping old on-disk JSON loadable. |
+| `t5-wiki` | Greenfield, large | 67 | Empty directory, spec only: a wiki in five interlocking modules — a markup language, versioned file storage, a link graph, a WSGI application and a CLI. Added 20 September 2026; **scored separately**, see below. |
 
 Design rules that turned out to matter:
 
@@ -190,3 +191,54 @@ What the corrected numbers do show is a 4× spread in how much work each model
 does for the same result. DeepSeek reaches 86/86 in 57 tool calls; Nemotron
 spends 220 for 63/86, 92 of them in the one task it destroyed and rebuilt. More
 tool calls is not more diligence — it is usually a model that is lost.
+
+## t5-wiki: a task that separates
+
+The four original tasks stopped separating the top of the field. Three models
+reached 86/86 and the gap between "very good" and "good enough" had closed.
+`t5-wiki` was added on 20 September 2026 to reopen it: an empty directory, a
+spec, and five modules that depend on each other — markup, versioned storage,
+a link graph, a WSGI application, a CLI. 67 hidden tests.
+
+**It is scored separately and deliberately not added to the 86.** Folding it in
+would make every earlier number incomparable, and t5 alone would carry 44 % of
+the total.
+
+| Model | t1–t4 | t5-wiki | t5 wall clock | output tokens |
+|---|---|---|---|---|
+| Qwen3.8-Flash-Next (GGUF Q3_K_XL + MTP) | 86 / 86 | **67 / 67** | 2346 s | 76,989 |
+| Ornith-1.5-35B-A3B (NVFP4) | 85 / 86 | **65 / 67** | **848 s** | 35,459 |
+| Nemotron-3.5-Lightning (NVFP4) | 64 / 86 | **0 / 67** | 450 s | 29,904 |
+
+Twenty-two points separated the first and last of these across t1–t4. Here it
+is the whole scale.
+
+**The zero is real, not a harness artefact.** Nemotron spent all 80 turns on
+the first module, testing regex variants in bash one-liners, and never wrote
+`speicher.py` at all; the hidden suite fails at import. Its last turn was spent
+reasoning about `== Untertitel ==` — a markup form that does not appear
+anywhere in the spec. It was checking its work against a wiki syntax it
+remembered from training rather than the one in front of it.
+
+That is also the honest limit of this task: a model that stalls on module one
+scores nothing, so t5 measures *whether the work got structured* at least as
+much as *how good the code is*. Where t3 still awards partial credit, t5 does
+not.
+
+**Ornith takes 97 % of the points in 36 % of the time.** For choosing a model
+to actually work with, that is a stronger argument than the two points Qwen has
+on it. The two it dropped are worth naming:
+
+```python
+autor = params.get("autor", ["anym"])[0]     # "anonym", mistyped
+```
+
+A default that only fires when the form field is missing — invisible in any
+manual check, and Ornith wrote no tests of its own. Qwen wrote 141 and scored
+the two points. The task asks for tests explicitly and awards nothing for them
+directly; they are exactly the difference between 65 and 67.
+
+**All three hit the 80-turn ceiling**, including Qwen, which had been finished
+for some time and spent its last turns re-reading the spec and questioning its
+own list parsing. For a task this size, 80 turns is tight — for Nemotron it was
+the proximate cause of the zero.

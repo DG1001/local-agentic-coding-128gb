@@ -41,7 +41,9 @@ BASISURL="${3:-http://127.0.0.1:8889/v1}"
 BASIS="$HOME/bench2"
 ZIEL="$BASIS/runs/$KENNUNG"
 HERMES="$HOME/.local/bin/hermes"
-AUFGABEN="t1-debug t2-refactor t3-neubau t4-feature"
+# Uebersteuerbar, um eine einzelne Aufgabe nachzufahren:
+#   AUFGABEN=t5-wiki ./run-hermes.sh kennung modell
+AUFGABEN="${AUFGABEN:-t1-debug t2-refactor t3-neubau t4-feature t5-wiki}"
 # Vor jeder Aufgabe pruefen, ob der Motor ueberhaupt antwortet -- ein
 # haengendes vLLM sieht sonst aus wie ein langsames Modell.
 . "$(dirname "$0")/bereit.sh"
@@ -107,6 +109,7 @@ for A in $AUFGABEN; do
         t2-refactor) GESAMT=17 ;;
         t3-neubau)   GESAMT=33 ;;
         t4-feature)  GESAMT=21 ;;
+        t5-wiki)     GESAMT=67 ;;
     esac
 
     printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \

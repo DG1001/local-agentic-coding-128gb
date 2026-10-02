@@ -474,6 +474,50 @@
           "stop": "turn limit 80 reached after 86 tool calls"
         }
       ]
+    },
+    {
+      "model": "Qwen3.8-Flash-Next (GGUF UD-Q3_K_XL + MTP)",
+      "context_window": 65536,
+      "engine": "llama.cpp (PR ggml-org/llama.cpp#28243 for qwen4exp MTP), --spec-type draft-mtp with the shared-Q8_0 head, --parallel 1",
+      "note": "125B total / 6B active, 90 GB on disk. First 86/86 in this harness, and the only perfect score across all four tasks. It is also the slowest: 3367 s against Ornith's 1707 s for one point more, which tracks the measured throughput (43.6 tok/s against roughly 75). t3-neubau alone took 2279 s. Run on the jaja revision that reports the output limit to the model in lines rather than tokens; the limit was never hit, so that guard is untested here.",
+      "tasks": [
+        {
+          "task": "t1-debug",
+          "seconds": 317,
+          "exit_code": 0,
+          "hidden_passed": 15,
+          "hidden_total": 15,
+          "tool_calls": 22,
+          "own_tests": "63 passed in 0.01s"
+        },
+        {
+          "task": "t2-refactor",
+          "seconds": 452,
+          "exit_code": 0,
+          "hidden_passed": 17,
+          "hidden_total": 17,
+          "tool_calls": 30,
+          "own_tests": "19 passed in 0.02s"
+        },
+        {
+          "task": "t3-neubau",
+          "seconds": 2279,
+          "exit_code": 0,
+          "hidden_passed": 33,
+          "hidden_total": 33,
+          "tool_calls": 77,
+          "own_tests": "88 passed in 0.07s"
+        },
+        {
+          "task": "t4-feature",
+          "seconds": 319,
+          "exit_code": 0,
+          "hidden_passed": 21,
+          "hidden_total": 21,
+          "tool_calls": 21,
+          "own_tests": "26 passed in 0.02s"
+        }
+      ]
     }
   ],
   "earlier_revision_read_bash_only": {
@@ -488,5 +532,53 @@
       "seconds": 319
     }
   },
-  "variance_note": "Nemotron-3.5-Lightning was run three times on the identical four tasks at 131,072 context: 63/86 (opencode), 64/86 (Java harness), 85/86 (Java harness + DSpark). The 22-point spread is larger than the gap between first and last place in the published seven-model table, every entry of which is a single run."
+  "variance_note": "Nemotron-3.5-Lightning was run three times on the identical four tasks at 131,072 context: 63/86 (opencode), 64/86 (Java harness), 85/86 (Java harness + DSpark). The 22-point spread is larger than the gap between first and last place in the published seven-model table, every entry of which is a single run.",
+  "t5_wiki": {
+    "added": "2026-09-20",
+    "hidden_tests": 67,
+    "note": "Scored separately from the 86 of t1-t4; folding it in would make every earlier number incomparable. Reference solution kept outside ~/bench2 on purpose: Hermes has previously reached beyond its own working directory, and a solution anywhere under bench2 would be findable by an agent.",
+    "runs": [
+      {
+        "model": "Qwen3.8-Flash-Next (GGUF UD-Q3_K_XL + MTP)",
+        "hidden_passed": 67,
+        "hidden_total": 67,
+        "seconds": 2346,
+        "exit_code": 1,
+        "exit_reason": "80-turn ceiling, work already complete",
+        "tool_calls": 82,
+        "input_tokens": 1617226,
+        "output_tokens": 76989,
+        "own_tests": "141 passed"
+      },
+      {
+        "model": "Ornith-1.5-35B-A3B (NVFP4)",
+        "hidden_passed": 65,
+        "hidden_total": 67,
+        "seconds": 848,
+        "exit_code": 1,
+        "exit_reason": "80-turn ceiling while debugging its bold/italic parser",
+        "tool_calls": 80,
+        "input_tokens": 1720159,
+        "output_tokens": 35459,
+        "own_tests": "none written",
+        "failures": [
+          "404 body missing the word 'anlegen'",
+          "author default mistyped as 'anym' instead of 'anonym'"
+        ]
+      },
+      {
+        "model": "NVIDIA-Nemotron-3.5-Lightning-30B-A3B (NVFP4)",
+        "hidden_passed": 0,
+        "hidden_total": 67,
+        "seconds": 450,
+        "exit_code": 1,
+        "exit_reason": "80-turn ceiling on module one",
+        "tool_calls": 80,
+        "input_tokens": 1457968,
+        "output_tokens": 29904,
+        "own_tests": "none written",
+        "note": "Wrote only __init__.py, fehler.py and auszeichnung.py; speicher.py never existed, so the hidden suite fails at import. Verified by hand: ModuleNotFoundError, not a harness artefact."
+      }
+    ]
+  }
 }

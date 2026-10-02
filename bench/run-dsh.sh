@@ -22,7 +22,9 @@ DSH="$HOME/deepseek-harness/apps/cli/lib/bin.js"
 # vLLM hoert auf 8889, ds4-server auf 8888 -- deshalb uebersteuerbar.
 URL="${URL:-http://127.0.0.1:8889/v1}"
 ZIEL="$BASIS/runs/$KENNUNG"
-AUFGABEN="t1-debug t2-refactor t3-neubau t4-feature"
+# Uebersteuerbar, um eine einzelne Aufgabe nachzufahren:
+#   AUFGABEN=t5-wiki ./run-dsh.sh kennung modell
+AUFGABEN="${AUFGABEN:-t1-debug t2-refactor t3-neubau t4-feature t5-wiki}"
 # Vor jeder Aufgabe pruefen, ob der Motor ueberhaupt antwortet -- ein
 # haengendes vLLM sieht sonst aus wie ein langsames Modell.
 . "$(dirname "$0")/bereit.sh"
@@ -90,6 +92,7 @@ for A in $AUFGABEN; do
         t2-refactor) GESAMT=17 ;;
         t3-neubau)   GESAMT=33 ;;
         t4-feature)  GESAMT=21 ;;
+        t5-wiki)     GESAMT=67 ;;
     esac
 
     printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \

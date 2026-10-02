@@ -456,6 +456,40 @@ this repo published one run per model — as its own summary table does — Orni
 would sit at 69 and the like-for-like comparison above would never have been
 noticed.
 
+## A perfect score, at twice the wall clock
+
+Qwen3.8-Flash-Next reached **86/86** on 20 September 2026 — every point of
+every task, the first clean sweep this harness has recorded. Ornith's 85/86
+had been the high-water mark since August.
+
+| Java harness | score | wall clock |
+|---|---|---|
+| **Qwen3.8-Flash-Next** (GGUF Q3_K_XL + MTP) | **86 / 86** | 3367 s |
+| Ornith-1.5-35B-A3B (NVFP4) | 85 / 86 | 1707 s |
+| Nemotron-3.5-Lightning (NVFP4) | 64 / 86 | 1340 s |
+
+The extra point costs an hour. That is not a harness effect: the model
+generates at 43.6 tok/s against Ornith's 75, and the run is almost exactly
+twice as long. `t3-neubau` alone took 2279 of the 3367 seconds — three times
+Ornith's 717 for that task, for one point more.
+
+The model is a different shape from everything else in this table: 125B total
+parameters with 6B active, 90 GB on disk at Q3_K_XL, served by llama.cpp
+rather than vLLM because no NVFP4 build of it fits in 121 GiB. The MTP head
+ships as a separate 2.8 GB sidecar file, and mainline llama.cpp has no MTP
+graph for the `qwen4exp` architecture at all — this run used the build from
+PR ggml-org/llama.cpp#28243. Without that head it generates at 28.7 tok/s and
+the run would have taken closer to 85 minutes.
+
+One thing this run does **not** show. The harness revision used here reports
+the output limit to the model in lines rather than tokens, and reports a
+truncated tool call as truncated instead of as malformed JSON — a fix for a
+run that looped because "unterminated string" reads like a typo, and a typo
+invites a retry of the same oversized call. The limit was never reached in
+these four tasks, so the recovery path is untested and the prevention is
+unproven: it may have worked, or this model may simply write in smaller
+pieces than the one that failed. A single run cannot separate those.
+
 ## An entry point that accepts the first message as the answer
 
 Hermes Agent has two ways in. `-z/--oneshot` "sends a single prompt and prints
