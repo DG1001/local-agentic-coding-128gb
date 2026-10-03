@@ -20,8 +20,10 @@
 #   model-switch qwen36nvfp4-voice dito, Dauerbetrieb :8889  (vLLM, 0.55)
 #   model-switch qwenvl       Qwen3-VL-32B        :8889  (vLLM, sieht Bilder)
 #   model-switch qwenvl30     Qwen3-VL-30B-A3B    :8889  (dasselbe als MoE)
-#   model-switch qwen38flash  Qwen3.8-Flash-Next  :8889  (llama.cpp, GGUF, ctx 64k)
-#   model-switch glm53flash   GLM-5.3-Flash       :8889  (llama.cpp/unsloth, IQ1_S)
+#   model-switch nemo3super   Nemotron-3-Super    :8889  (vLLM, 120B-A12B, MTP)
+#   model-switch nemo3omni    Nemotron-3-Omni     :8889  (vLLM, sieht und hoert)
+#   model-switch qwen38flash  Qwen3.8-Flash-Next  :8889  (llama.cpp/PR 28243, MTP)
+#   model-switch glm53flash   GLM-5.3-Flash       :8889  (Gewichte seit 03.10. geloescht)
 #   model-switch stop         alles stoppen
 #   model-switch status       was laeuft gerade
 #
@@ -49,6 +51,20 @@ load_spec() {
     # gebraucht, wenn ein Abzug nachbearbeitet werden musste und beide
     # Fassungen nebeneinander liegen bleiben sollen.
     case "$1" in
+        # DSpark schlaegt den eingebauten MTP-Kopf, gemessen am 16.09.2026
+        # (Quelltext, alle drei auf v0.27.1):
+        #     ohne      76,9 tok/s
+        #     MTP      111,6          Annahmelaenge 2,28
+        #     DSpark   130,6          Annahmelaenge 1,88
+        # Bemerkenswert, weil DSpark die KUERZEREN angenommenen Folgen hat und
+        # trotzdem gewinnt: sein eigenes kleines Entwurfsmodell raet billiger,
+        # als der MTP-Kopf das Hauptmodell belastet. Die Annahmelaenge allein
+        # sagt den Durchsatz also nicht vorher -- sie taugt nur, um Totalausfaelle
+        # zu erkennen (siehe ornith, 1,16).
+        #
+        # MTP braucht hier "moe_backend":"triton" IN der Spekulationskonfiguration:
+        # --moe-backend marlin gilt sonst auch fuer den Entwurf, dessen MoE-
+        # Schichten unquantisiert sind, und der Start bricht ab.
         nemotronspec)
             # Das Rezept aus der Modellkarte, woertlich -- inklusive der
             # Version, an der der erste Versuch gescheitert ist: vLLM 0.26.0
@@ -71,6 +87,90 @@ load_spec() {
                    --reasoning-parser nemotron_v3
                    --tool-call-parser qwen3_coder
                    --enable-auto-tool-choice) ;;
+
+        nemo3super)
+            # Nemotron-3-Super-120B-A12B in NVFP4, 75 GiB. Das groesste
+            # Textmodell, das hier hineinpasst -- und der erste Bewohner mit
+            # zweistelligen aktiven Parametern: 12B statt der 3B, die alle
+            # anderen MoE-Modelle hier fahren. Rechnerisch also grob ein
+            # Viertel des Tempos. Ob das tragbar ist, entscheidet MTP, nicht
+            # die Rohgeschwindigkeit -- deshalb ist es hier eingeschaltet.
+            #
+            # Die Modellkarte fuehrt 'mtp' und 'latent-moe'; vLLM 0.27.1 kennt
+            # NemotronHMTPModel, der Kopf steckt im Checkpoint selbst, ein
+            # zweites Verzeichnis wie bei DSpark ist nicht noetig.
+            # Zum Gegenmessen: SPEC=0 model-switch nemo3super
+            ABBILD=vllm/vllm-openai:v0.27.1
+            DIR=NVIDIA-Nemotron-3-Super-120B-A12B-NVFP4
+            SERVED=nemotron-3-super; DEF_CTX=131072
+            EXTRA=()
+            [ "${SPEC:-1}" = 1 ] && EXTRA+=(--speculative-config '{"method":"mtp","num_speculative_tokens":2}')
+            # Dieselben Mamba- und MoE-Flaggen wie bei den anderen NemotronH:
+            # --mamba-cache-mode align verlangt eine Stapelgrenze von mindestens
+            # der Blockgroesse des Zustandsspeichers, vLLMs Vorgabe 2048 ist zu
+            # klein und der Start bricht mit einer Zusicherungsverletzung ab.
+            # KEIN --moe-backend marlin, anders als bei Nemotron-3.5:
+            # dieser Checkpoint ist MIXED_PRECISION, seine MoE-Schichten
+            # liegen unquantisiert vor, und vLLM lehnt Marlin dafuer ab
+            # ("not supported for unquantized MoE"). Ohne Angabe waehlt
+            # vLLM selbst -- auf GB10 landet es bei triton.
+            EXTRA+=(--max-num-batched-tokens 8192
+                   --enable-prefix-caching
+                   --mamba-backend flashinfer
+                   --mamba-cache-mode align
+                   --reasoning-parser nemotron_v3
+                   --tool-call-parser qwen3_coder)
+            # 75 GiB Gewichte lassen bei 0.85 rund 28 GiB fuer KV und Aktivierung.
+            # Reicht es bei 131072 nicht, zuerst CTX kleiner setzen, nicht
+            # GPU_UTIL hoeher -- darunter liegt nur noch das Betriebssystem.
+            GPU_UTIL=${GPU_UTIL:-0.88} ;;
+
+        nemo3omni)
+            # Nemotron-3-Nano-Omni-30B-A3B, 21 GiB, 3B aktiv -- also in der
+            # schnellen Klasse, und trotzdem multimodal. Angeschafft, weil bis
+            # dahin nur qwenvl30 Bilder sehen konnte und das mit 31 GiB als
+            # eigener Umschaltvorgang bezahlt wurde.
+            #
+            # Der Checkpoint traegt vision_config, sound_config und
+            # video_context_token; freigeschaltet ist hier zunaechst nur Bild.
+            # Ton und Video erst nach einem Versuch dazunehmen -- ein Schluessel,
+            # den vLLM fuer dieses Modell nicht kennt, laesst den Start
+            # scheitern, und das soll nicht beim ersten Gebrauch passieren.
+            #
+            # --trust-remote-code ist Pflicht: die Architektur kommt als
+            # auto_map mit eigenen Python-Dateien im Checkpoint.
+            ABBILD=vllm/vllm-openai:v0.27.1
+            DIR=Nemotron-3-Nano-Omni-30B-A3B-NVFP4
+            SERVED=nemotron-3-omni; DEF_CTX=131072
+            # KEIN --moe-backend marlin, anders als bei Nemotron-3.5:
+            # dieser Checkpoint ist MIXED_PRECISION, seine MoE-Schichten
+            # liegen unquantisiert vor, und vLLM lehnt Marlin dafuer ab
+            # ("not supported for unquantized MoE"). Ohne Angabe waehlt
+            # vLLM selbst -- auf GB10 landet es bei triton.
+            # TORCH_COMPILE_DISABLE=1 ist hier nicht Feinschliff, sondern die
+            # Startbedingung. vLLM probt beim Hochfahren jede Modalitaet des
+            # Modells durch; torch.compile uebersetzt dabei den Vorverarbeiter
+            # und erzeugt auf aarch64 ein -march, das der GCC im Container nicht
+            # kennt:  cc1plus: error: unknown value 'armv9-a+sve2+fp16fml+
+            # sha3+bf16+i8mm' for '-march'.  Der Start bricht ab, und zwar
+            # nacheinander an Video, Ton UND Bild -- die Modalitaeten einzeln
+            # abzuschalten verschiebt den Fehler nur, es behebt ihn nicht.
+            # Auf x86 faellt das nie auf.
+            #
+            # Preis: der uebersetzte Pfad faellt weg. Gemessen wurden trotzdem
+            # 36,4 tok/s (Quelltext) und 38,3 (Fliesstext) am 15.09.2026, und
+            # die Bildprobe las 4 von 4 Zahlen aus einem Balkendiagramm richtig.
+            UMGEBUNG="${UMGEBUNG:-TORCH_COMPILE_DISABLE=1}"
+            EXTRA=(--trust-remote-code
+                   # Nur Bild. Video und Ton kann der Checkpoint auch, sie
+                   # sind hier aber ungeprueft -- erst einschalten, wenn jemand
+                   # sie wirklich braucht und danach misst.
+                   --limit-mm-per-prompt '{"image":2,"video":0,"audio":0}'
+                   --max-num-batched-tokens 8192
+                   --mamba-backend flashinfer
+                   --mamba-cache-mode align
+                   --reasoning-parser nemotron_v3
+                   --tool-call-parser qwen3_coder) ;;
 
         nemotron)
             # Startzeile nach NVIDIAs Empfehlung fuer DGX Spark. Das Entwurfs-
@@ -177,6 +277,17 @@ load_spec() {
             # gleiche Klasse, gleiche Hardware, gleiche Parser, anderes
             # Training. Die Modellkarte nennt qwen3_xml und qwen3, weil die
             # Architektur von Qwen3.5-MoE stammt.
+            #
+            # BEWUSST OHNE MTP, obwohl der Checkpoint einen Kopf mitbringt
+            # (config.json: mtp_num_hidden_layers = 1). Gemessen am 16.09.2026
+            # macht er das Modell LANGSAMER:
+            #     Quelltext   75,1 -> 68,1 tok/s
+            #     Fliesstext  75,7 -> 42,8 tok/s   (minus 44 %)
+            # Die mittlere Annahmelaenge liegt bei 1,16 -- der Kopf raet
+            # praktisch nichts Brauchbares, und Entwurf plus Pruefung kosten
+            # mehr, als sie einbringen. Vermutlich wurde er beim Nachtraining
+            # nicht mitgezogen. Bei Qwen3.6, derselben Architektur und Groesse,
+            # bringt derselbe Schalter 1,65x. Gleiche Bauart heisst hier nichts.
             DIR=Ornith-1.5-35B-A3B-NVFP4; SERVED=ornith-1.5-35b-a3b; DEF_CTX=131072
             EXTRA=(--tool-call-parser qwen3_xml --reasoning-parser qwen3) ;;
 
@@ -228,7 +339,24 @@ load_spec() {
             # Vision-Turm und bricht mit "Following weights were not initialized
             # from checkpoint" ab, wie schon bei KAT und AgentWorld. Die
             # FP8-Fassung kam ohne aus; verlassen kann man sich darauf nicht.
+            # MTP, gemessen am 15.09.2026: 76,1 -> 125,7 tok/s bei Quelltext
+            # (1,65x), 76,7 -> 86,1 bei Fliesstext (1,12x). Der Kopf steckt im
+            # Checkpoint (config.json: mtp_num_hidden_layers = 1) und lag hier
+            # bis dahin ungenutzt. Mittlere Annahmelaenge 2,27.
+            #
+            # Dazu drei geprufte Negativbefunde, damit sie niemand nochmal misst:
+            # v0.28.0 statt v0.27.1 bringt NICHTS (76,4 -> 76,3), die zehn
+            # Flaggen des offiziellen Spark-Rezepts bringen NICHTS (-> 76,1),
+            # VLLM_USE_RUST_FRONTEND=1 bringt NICHTS (126,3 gegen 125,7). Das
+            # Rezept zielt mit --async-scheduling und dem Rust-Frontend auf
+            # Frontend- und Planungsaufwand -- der faellt bei vielen gleich-
+            # zeitigen Anfragen ins Gewicht, nicht bei unserem einen Strom.
+            #
+            # v0.28.0 trotzdem, weil die MTP-Messung darauf lief; auf v0.27.1
+            # ist diese Kombination ungeprueft.
+            ABBILD=vllm/vllm-openai:v0.28.0-aarch64
             EXTRA=(--language-model-only
+                   --speculative-config '{"method":"mtp","num_speculative_tokens":3,"moe_backend":"triton"}'
                    --tool-call-parser qwen3_xml --reasoning-parser qwen3) ;;
 
         qwen36nvfp4-voice)
@@ -255,7 +383,18 @@ load_spec() {
             # `docker inspect vllm-model` zeigt sie.
             DIR=Qwen3.6-35B-A3B-NVFP4; SERVED=qwen3.6-35b-a3b-nvfp4; DEF_CTX=131072
             GPU_UTIL=${GPU_UTIL:-0.55}
+            # MTP wie beim Pruefstands-Eintrag -- fuer einen Sprachassistenten
+            # zaehlt die Antwortzeit noch mehr als dort. Gemessen 1,65x bei
+            # Quelltext, 1,12x bei Fliesstext; gesprochene Antworten liegen
+            # naeher am Fliesstext, also eher am unteren Ende.
+            #
+            # Der Entwurfskopf will zusaetzlichen Speicher, und GPU_UTIL steht
+            # hier bewusst niedrig, damit whisper.cpp, Piper und der Rest des
+            # Sprachdienstes Platz behalten. Reicht es nicht, ist 0.60 der
+            # naechste Schritt -- nicht das Abschalten von MTP.
+            ABBILD=vllm/vllm-openai:v0.28.0-aarch64
             EXTRA=(--language-model-only
+                   --speculative-config '{"method":"mtp","num_speculative_tokens":3,"moe_backend":"triton"}'
                    --tool-call-parser qwen3_xml --reasoning-parser qwen3) ;;
 
         laguna)
@@ -363,6 +502,7 @@ stop_llama() {
 start_llama() {
     local gguf="$LLAMA_GGUF"
     [ -f "$gguf" ] || { echo "FEHLER: $gguf fehlt"; exit 1; }
+    pruefe_verdraengung
     stop_ds4; stop_vllm; stop_llama
     echo "Starte llama-server ($LLAMA_NAME, ctx ${CTX:-65536}, ${PARALLEL:-1} Slot) ..."
     # --no-mmap: mit mmap laedt der GB10 laut PR ggml-org/llama.cpp#27742
@@ -380,6 +520,7 @@ start_llama() {
         -m "$gguf" -c "${CTX:-65536}" -ngl "${NGL:-99}" \
         --parallel "${PARALLEL:-1}" --no-mmap --jinja \
         --alias "$LLAMA_NAME" --host 127.0.0.1 --port "$VLLM_PORT" \
+        "${LLAMA_EXTRA[@]}" \
         > "$HOME/llama-server.log" 2>&1 < /dev/null &
 
     # Eigene Warteschleife statt wait_ready: die dortige Abbruchbedingung
@@ -412,12 +553,68 @@ start_ds4() {
     wait_ready "$DS4_PORT" "ds4-server" 180
 }
 
+# --------------------------------------------------------------------------
+# Verdraengungsschutz. Am 18.09.2026 hat kihiwis Waechter mitten in eine
+# opencode-Anfrage hineingeschaltet: der Prompt war 53 224 Token gross und
+# brauchte 98 s Vorverarbeitung, die Pruefanfrage des Waechters lief in ihre
+# 30-s-Grenze, und er schloss daraus "Motor tot". Ein LANGER Prompt sieht fuer
+# eine Zeitgrenze aus wie ein toter Motor -- je groesser die Aufgabe, desto
+# sicherer der Abschuss.
+#
+# Die Belegungsstelle deckt das nicht ab: sie kennt nur Klienten, die sich
+# anmelden, und eine gewoehnliche opencode-Sitzung tut das nicht. Deshalb hier
+# eine Pruefung, die nicht nach Anmeldung fragt, sondern nach Tatsachen --
+# rechnet der Motor gerade?
+#
+# Antwortet nichts, gilt der Motor NICHT als beschaeftigt: ein wirklich toter
+# Motor muss weiter ohne Rueckfrage ersetzt werden koennen, sonst bleibt der
+# Assistent stumm.
+motor_beschaeftigt() {
+    local p="${VLLM_PORT:-8889}"
+    # llama.cpp: /slots sagt je Slot, ob er rechnet.
+    if curl -sf --max-time 2 "http://127.0.0.1:$p/slots" 2>/dev/null \
+       | grep -q '"is_processing"[[:space:]]*:[[:space:]]*true'; then
+        echo "llama-server rechnet gerade an einer Anfrage"; return 0
+    fi
+    # vLLM: die Kennzahl steht in /metrics.
+    local n
+    n=$(curl -sf --max-time 2 "http://127.0.0.1:$p/metrics" 2>/dev/null \
+        | awk '/^vllm:num_requests_running/ {print $2+0; exit}')
+    if [ -n "$n" ] && [ "${n%.*}" -gt 0 ] 2>/dev/null; then
+        echo "vLLM bearbeitet gerade $n Anfrage(n)"; return 0
+    fi
+    return 1
+}
+
+# Ruft jeder Starter auf, bevor er etwas stoppt.
+pruefe_verdraengung() {
+    [ "${ERZWINGEN:-0}" = 1 ] && return 0
+    local grund
+    grund=$(motor_beschaeftigt) || return 0
+    echo "ACHTUNG: $grund." >&2
+    if [ -t 0 ]; then
+        printf 'Trotzdem umschalten und die laufende Anfrage abbrechen? [j/N] ' >&2
+        local a; read -r a
+        case "$a" in [jJyY]*) return 0 ;; *) echo "Abgebrochen." >&2; exit 3 ;; esac
+    fi
+    # Nicht am Terminal -- also Skript, Dienst oder Waechter: nicht verdraengen.
+    echo "Kein Terminal, also nicht verdraengt. ERZWINGEN=1 setzt sich darueber hinweg." >&2
+    exit 3
+}
+
 start_vllm() {
     local key="$1"
     load_spec "$key" || { echo "Unbekanntes Modell: $key"; exit 2; }
     [ -d "$MODELS/$DIR" ] || { echo "FEHLER: $MODELS/$DIR fehlt"; exit 1; }
 
-    stop_ds4; stop_vllm
+    # stop_llama gehoert hierher, auch wenn es lange fehlte: llama-server
+    # hoert auf demselben Port 8889. Blieb er stehen, scheiterte docker run
+    # still, der alte Server antwortete weiter -- und eine Messung, die nur
+    # fragt ob der Port antwortet, misst dann das falsche Modell. Genau so
+    # passiert am 14.09.2026 mit drei Nemotron-Laeufen, die in Wahrheit
+    # Qwen3.8-Flash-Next waren.
+    pruefe_verdraengung
+    stop_ds4; stop_vllm; stop_llama
     mkdir -p "$HOME/.cache/vllm"
     # --default-chat-template-kwargs '{"enable_thinking": false}':
     # Ohne das liefern die Reasoning-Modelle ein Format, das die Parser nicht
@@ -496,11 +693,38 @@ status() {
     free -h | awk 'NR==2{printf "%-14s %s frei von %s\n", "Speicher:", $7, $2}'
 }
 
+# Zusatzflags je Eintrag; leer, solange keiner welche setzt.
+LLAMA_EXTRA=()
+
 case "${1:-status}" in
     ds4)                          start_ds4 ;;
     qwen38flash)
+        # Dritter Bau, und zwar notgedrungen: der Hauptzweig kennt fuer
+        # qwen4exp keinen MTP-Graphen, ein Kopf dort bewirkt schlicht nichts
+        # -- ohne Fehlermeldung, man sieht nur die unveraenderte Geschwindigkeit.
+        # ggml-org/llama.cpp#28243 bringt ihn; bis der zusammengefuehrt ist,
+        # liegt er als eigener Arbeitsbaum neben dem Hauptklon.
+        LLAMA_BIN="$HOME/code/llama.cpp-qwenmtp/build/bin/llama-server"
         LLAMA_GGUF="$HOME/gguf/Qwen3.8-Flash-Next-UD-Q3_K_XL/UD-Q3_K_XL/Qwen3.8-Flash-Next-UD-Q3_K_XL-00001-of-00003.gguf"
         LLAMA_NAME=qwen3.8-flash-next
+        # Der MTP-Kopf raet zwei Token voraus, das Hauptmodell prueft sie in
+        # einem Durchgang nach. Die Pruefung ist exakt, die Ausgabe also
+        # unveraendert -- nur schneller. Gemessen am 14.09.2026, Median aus
+        # je drei Laeufen, greedy:
+        #     Quelltext   28,7 -> 43,6 tok/s   (1,52x)
+        #     Fliesstext  28,9 -> 37,6 tok/s   (1,30x)
+        # Annahmequote 58,6 %, mittlere Entwurfslaenge 2,17. Der Unterschied
+        # zwischen beiden Zeilen ist kein Messrauschen: strukturierter Text
+        # laesst sich weiter am Stueck erraten als Prosa. Bei hoeherer
+        # Temperatur faellt der Gewinn, die Zahlen sind obere Schranken.
+        #
+        # -md muss ausdruecklich mit: die Koepfe liegen in einem MTP/-Ordner,
+        # den die selbsttaetige Suche nach Beiwerk nicht durchsucht. Ohne ihn
+        # laeuft --spec-type draft-mtp ins Leere, wieder ohne Fehlermeldung.
+        LLAMA_EXTRA=(
+            -md "$HOME/gguf/Qwen3.8-Flash-Next-MTP/mtp-Qwen3.8-Flash-Next-shared-Q8_0.gguf"
+            --spec-type draft-mtp --spec-draft-n-max 2
+        )
         start_llama ;;
     glm53flash)
         # Eigener Bau: die Architektur glm5next steckt bis heute nur in
@@ -508,17 +732,45 @@ case "${1:-status}" in
         # Deshalb ein zweiter Klon -- der erste bedient die uebrigen GGUFs
         # und bleibt auf dem offiziellen Stand.
         LLAMA_BIN="$HOME/code/llama.cpp-glm5next/build/bin/llama-server"
-        LLAMA_GGUF="$HOME/gguf/GLM-5.3-Flash-UD-IQ1_S/UD-IQ1_S/GLM-5.3-Flash-UD-IQ1_S-00001-of-00003.gguf"
+        # IQ2_XXS statt IQ1_S, und zwar aus einem Grund, der die Erwartung
+        # auf den Kopf stellt: die groessere Datei ist die schnellere.
+        # Gemessen am 14.09.2026, Median aus je drei Laeufen, greedy, ohne MTP:
+        #     Quelltext   15,8 -> 18,5 tok/s
+        #     Fliesstext  15,7 -> 18,4 tok/s
+        # Acht GB mehr Gewichte und trotzdem +17 %. Nicht die Bandbreite
+        # entscheidet hier, sondern das Entpacken: ein Bit je Gewicht geht nur
+        # ueber Nachschlagetabellen und mehrstufige Blockskalen, und diese
+        # Arbeit faellt bei jedem Gewicht an. IQ2_XXS ist billiger zu dekodieren,
+        # das spart mehr Zeit, als die zusaetzlichen Bytes kosten.
+        # Bessere Quantisierung und mehr Tempo also in derselben Richtung --
+        # es gibt hier nichts abzuwaegen.
+        # GEWICHTE AM 03.10.2026 GELOESCHT, 95 GB. Das Modell holte im
+        # Pruefstand 9 von 86 Punkten -- und alle neun stammten vom
+        # unberuehrten Ausgangszustand, der Beitrag war also null. Gemessen
+        # wurde damals IQ1_S; die hier eingetragene IQ2_XXS kam spaeter und
+        # lief nie durch den Pruefstand. Der Eintrag bleibt als Beleg, mit
+        # welchen Flaggen gemessen wurde; ein Aufruf scheitert lesbar.
+        LLAMA_GGUF="$HOME/gguf/GLM-5.3-Flash-UD-IQ2_XXS/UD-IQ2_XXS/GLM-5.3-Flash-UD-IQ2_XXS-00001-of-00004.gguf"
         LLAMA_NAME=glm-5.3-flash
         # 64k, obwohl 93 GB Gewichte wenig Luft lassen: die hybride lineare
         # und spaerliche Aufmerksamkeit braucht auffallend wenig KV-Speicher.
         # Gemessen macht der Sprung von 32k auf 64k genau ein GiB aus -- und
         # Hermes verweigert den Dienst unter 64000.
         CTX="${CTX:-65536}"
+        # Der MTP-Kopf steckt hier im GGUF selbst (blk.45.nextn.*), anders als
+        # bei Qwen ist kein -md noetig. Er wurde monatelang mitgeladen und nie
+        # benutzt, weil --spec-type als Vorgabe auf none steht. Gemessen am
+        # 14.09.2026, Median aus je drei Laeufen, greedy:
+        #     Quelltext   15,8 -> 26,2 tok/s   (1,66x)
+        #     Fliesstext  15,7 -> 24,1 tok/s   (1,53x)
+        # Annahmequote 57,5 %. Mit IQ2_XXS belegt das Ganze 106 GiB;
+        # bei 64k Kontext bleiben 15 GiB frei, die 32k-Rueckfallebene
+        # wurde nicht gebraucht.
+        LLAMA_EXTRA=(--spec-type draft-mtp --spec-draft-n-max 2)
         start_llama ;;
-    laguna|kat|agentworld|qwen27b|nemotron|nemotronspec|qwen36moe|qwen38|ornith|ornith-voice|qwen36nvfp4|qwen36nvfp4-voice|qwenvl|qwenvl30)
+    laguna|kat|agentworld|qwen27b|nemotron|nemotronspec|nemo3super|nemo3omni|qwen36moe|qwen38|ornith|ornith-voice|qwen36nvfp4|qwen36nvfp4-voice|qwenvl|qwenvl30)
             start_vllm "$1" ;;
     stop)   stop_ds4; stop_vllm; stop_llama; echo "Alles gestoppt."; free -h | awk 'NR==2{print "Frei: "$7}' ;;
     status) status ;;
-    *)      sed -n '2,23p' "$0"; exit 2 ;;
+    *)      sed -n '2,28p' "$0"; exit 2 ;;
 esac
