@@ -490,6 +490,56 @@ these four tasks, so the recovery path is untested and the prevention is
 unproven: it may have worked, or this model may simply write in smaller
 pieces than the one that failed. A single run cannot separate those.
 
+## 86/86 from 7.2 GB, and what it costs
+
+Ternary-Bonsai-2-27B is Qwen3.8-27B with every language weight stored as
+{−1, 0, +1} at 2.13 bits — 7.2 GB where the NVFP4 build of the same base model
+takes 22 GB. Both score **86/86** here. One model, two compressions, same
+tasks, same hidden suite.
+
+| Java harness | weights | score | wall clock |
+|---|---|---|---|
+| Ornith-1.5-35B-A3B (NVFP4) | 23 GB | 85 / 86 | **28 min** |
+| Qwen3.8-Flash-Next (Q3_K_XL) | 84 GB | 86 / 86 | 56 min |
+| Qwen3.8-27B (NVFP4 + MTP) | 22 GB | 86 / 86 | — ‡ |
+| **Ternary-Bonsai-2-27B (PQ2_0)** | **7.2 GB** | **86 / 86** | 171 min |
+
+It is by far the smallest model to reach a full score here; the previous
+smallest was Ornith at 23 GB, one point short. For scale in the other
+direction: GLM-5.3-Flash at 87 GB — twelve times the weights — contributed
+nothing at all across the same four tasks.
+
+The fork's own KNOWN_ISSUES lists malformed tool calls as an open problem.
+**184 tool calls, none malformed.** `t3-neubau` exits 1 on the 80-turn ceiling
+with the work already finished, as every model does there.
+
+### Smaller is not faster
+
+This is the part that cuts against finding 1 on the front page. At 273 GB/s,
+7.2 GB of weights permits roughly 38 tok/s. It reaches 23.6 — **62 % of the
+bandwidth ceiling**, where the larger quantised models sit close to theirs.
+Ternary weights are not simply read; they are unpacked, and a blockwise
+Hadamard rotation is applied to the activations at runtime. That is compute,
+and compute is what this machine has spare.
+
+So the three-fold reduction in bytes buys about 18 % in tokens per second over
+the same model at 22 GB with MTP. **Bandwidth decides which models are worth
+running — until the format makes itself expensive enough to decode that compute
+becomes the binding constraint.**
+
+And the wall clock is worse than the throughput suggests: 171 minutes against
+Ornith's 28 at a comparable rate. The time is not in writing, it is in
+reasoning between turns. On an open question it produced 4,347 characters of
+reasoning for a 395-character answer. For a tool call it produced 183.
+
+What the model buys is therefore **memory, paid for in time**. On a box where
+something else needs 100 GiB — a voice service, a second model, a vision tower
+— full benchmark performance from 7 GB is a trade worth having. Where response
+time is what matters, Ornith does 97 % of the work in 16 % of the time.
+
+‡ `t3-neubau` ran into a 90-minute cap with the work finished, so that row has
+no comparable total.
+
 ## An entry point that accepts the first message as the answer
 
 Hermes Agent has two ways in. `-z/--oneshot` "sends a single prompt and prints

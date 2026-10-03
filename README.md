@@ -49,6 +49,7 @@ tests pass.**
 | **Ornith-1.5-35B-A3B** (NVFP4) | MoE | 23 GB | **86 / 86** § | 1:09:00 | — | — |
 | **Qwen3.8-Flash-Next** (Q3_K_XL) | MoE | 84 GB | **86 / 86** ¶ | **33:33** | — | 98 |
 | GLM-5.3-Flash (IQ1_S) | MoE | 87 GB | 9 / 86 ‖ | 35:28 | 16 | — |
+| **Ternary-Bonsai-2-27B** (PQ2_0) | dense | **7.2 GB** | **86 / 86** # | 2:51:23 | 184 | 113 |
 
 § Added later, not part of the original round. Two opencode runs: 69/86 and
 86/86. The 69 was `t2-refactor` scoring zero because the rewrite dropped one
@@ -72,6 +73,20 @@ against `t1-debug` before any model touches it and it passes 9 of 15; the other
 three seeds score zero. GLM-5.3-Flash's contribution across all four tasks is
 therefore **nothing at all**, and the row is not a verdict on the model but a
 record of a configuration that did not work. See the GLM section below.
+
+# Added later, and the smallest model here to reach a full score — by a wide
+margin. It is Qwen3.8-27B with every language weight stored as {−1, 0, +1} at
+2.13 bits, so the row above it at 22 GB NVFP4 is **the same base model at a
+different compression**, and both score 86/86. Needs a fork
+([PrismML-Eng/llama.cpp](https://github.com/PrismML-Eng/llama.cpp), branch
+`prism`): mainline knows `TQ1_0`/`TQ2_0` but not the `PTQ1_0`/`PQ2_0` packings.
+184 tool calls, none malformed, which that fork's own known-issues page lists as
+open. The wall clock is the catch — 171 minutes against Ornith's 28 at a
+comparable 23.6 tok/s, because the time goes into reasoning between turns rather
+than into writing. It also shows a limit of finding 1: 7.2 GB permits ~38 tok/s
+at 273 GB/s and it reaches 62 % of that, because ternary weights must be
+unpacked and rotated at runtime. **Smaller stops being faster once the format
+costs enough to decode.**
 
 † **Not a typo, and the most important number in this table.** Nemotron has
 since been run **thirteen** times on the identical tasks, scoring anywhere from

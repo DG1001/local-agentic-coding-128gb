@@ -518,6 +518,51 @@
           "own_tests": "26 passed in 0.02s"
         }
       ]
+    },
+    {
+      "model": "Ternary-Bonsai-2-27B (PQ2_0, ternary 2.13 bit/weight)",
+      "context_window": 65536,
+      "engine": "llama.cpp fork PrismML-Eng/llama.cpp branch prism (custom ternary kernels; mainline knows TQ1_0/TQ2_0 but not PTQ1_0/PQ2_0), --temp 1.0 --top-p 0.95 --top-k 20 --min-p 0.05 per the model card",
+      "weights_gb": 7.2,
+      "note": "Derived from Qwen3.8-27B, the same base model that scores 86/86 here at 22 GB in NVFP4 — so this is one model at two compressions, not two models. 86/86 at 7.2 GB makes it by far the smallest model to reach a full score; the previous smallest was Ornith at 23 GB with 85/86. No malformed tool calls in 184 calls, which the fork's own KNOWN_ISSUES lists as an open problem. t3-neubau's exit 1 is the 80-turn ceiling with the work finished. The cost is time: 171 minutes against Ornith's 28 and Qwen3.8-Flash-Next's 56, at a comparable 23.6 tok/s — the time goes into reasoning between turns, not into writing.",
+      "tasks": [
+        {
+          "task": "t1-debug",
+          "seconds": 970,
+          "exit_code": 0,
+          "hidden_passed": 15,
+          "hidden_total": 15,
+          "tool_calls": 17,
+          "own_tests": "11 passed in 0.00s"
+        },
+        {
+          "task": "t2-refactor",
+          "seconds": 1555,
+          "exit_code": 0,
+          "hidden_passed": 17,
+          "hidden_total": 17,
+          "tool_calls": 34,
+          "own_tests": "16 passed in 0.01s"
+        },
+        {
+          "task": "t3-neubau",
+          "seconds": 4870,
+          "exit_code": 1,
+          "hidden_passed": 33,
+          "hidden_total": 33,
+          "tool_calls": 78,
+          "own_tests": "54 passed in 0.16s"
+        },
+        {
+          "task": "t4-feature",
+          "seconds": 2888,
+          "exit_code": 0,
+          "hidden_passed": 21,
+          "hidden_total": 21,
+          "tool_calls": 55,
+          "own_tests": "32 passed in 0.05s"
+        }
+      ]
     }
   ],
   "earlier_revision_read_bash_only": {
