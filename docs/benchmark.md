@@ -209,6 +209,10 @@ the total.
 | Qwen3.8-Flash-Next (GGUF Q3_K_XL + MTP) | 86 / 86 | **67 / 67** | 2346 s | 76,989 |
 | Ornith-1.5-35B-A3B (NVFP4) | 85 / 86 | **65 / 67** | **848 s** | 35,459 |
 | Nemotron-3.5-Lightning (NVFP4) | 64 / 86 | **0 / 67** | 450 s | 29,904 |
+| Kolibri-1 (FP8) | 85, 84 / 86 * | **30 / 67** | 2103 s | 93,788 |
+
+All rows were run under the [Java harness](harness.md) at 80 turns. \* Kolibri
+has no Java-harness run of t1–t4; these are its two opencode runs.
 
 Twenty-two points separated the first and last of these across t1–t4. Here it
 is the whole scale.
@@ -242,3 +246,11 @@ directly; they are exactly the difference between 65 and 67.
 for some time and spent its last turns re-reading the spec and questioning its
 own list parsing. For a task this size, 80 turns is tight — for Nemotron it was
 the proximate cause of the zero.
+
+**Kolibri-1, added later, shows the ceiling from the other side.** It hit the
+same limit with the work unfinished: 14 of its 24 writes and edits went to
+`wiki/auszeichnung.py`, the markup module, and `wiki/cli.py` was never written.
+Under opencode, which has no turn limit, the same model scored 62/67 and 60/67
+in about 22 minutes each. So 30/67 measures how many turns it needs here, not
+whether it can build the wiki. `run-java.sh` now gives t5 120 turns for exactly this
+reason; Kolibri was held to 80 to stay comparable with the rows above.

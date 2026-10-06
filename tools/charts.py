@@ -260,7 +260,7 @@ def main():
     spec = [85] + ab["ohne"] + ab["mit"]
     daten = [
         ("Nemotron + DSpark · 11 runs", d["nemotronspec"]["end_to_end_tok_s"], spec, WARN, -10, -10),
-        ("Qwen3.6-35B-A3B NVFP4 · 3 runs", d["qwen36nvfp4"]["end_to_end_tok_s"], [64, 67, 86], BETONT, -14, 22),
+        ("Qwen3.6-35B-A3B NVFP4 · 3 runs", d["qwen36nvfp4"]["end_to_end_tok_s"], [64, 67, 86], BETONT, -14, 34),
         ("Nemotron · 2 runs", d["nemotron"]["end_to_end_tok_s"], [63, 64], WARN, 9, 14),
         ("Qwen3.6-35B-A3B FP8", d["qwen36moe"]["end_to_end_tok_s"], [68], BALKEN, 9, 4),
         ("AgentWorld", d["agentworld"]["end_to_end_tok_s"], [80], BALKEN, 9, 4),
@@ -276,6 +276,7 @@ def main():
         # Punktzahl der unberuehrten Saat, keine Leistung des Modells, und in
         # einem Diagramm "Punktzahl gegen Durchsatz" waere das eine Luege.
         ("Qwen3.8-Flash-Next · 2 runs", d["qwen38flash"]["end_to_end_tok_s"], [86, 86], BETONT, 9, 4),
+        ("Kolibri-1 · 2 runs", d["kolibri"]["end_to_end_tok_s"], [85, 84], BALKEN, 9, -8),
     ]
     p = streu(daten, "What a score costs in speed",
               "vertical bars are repeated runs of one configuration, not error bars",

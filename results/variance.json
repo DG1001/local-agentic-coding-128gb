@@ -125,6 +125,14 @@
         86
       ],
       "note": "Two opencode runs, 33:33 and 38:24. The first model here to score 86/86 twice in a row. No task lost a point in either run; the spread is wall clock only, and almost all of it is t3-neubau at 779 s against 1319 s."
+    },
+    "Kolibri-1 (FP8)": {
+      "runs": 2,
+      "scores": [
+        85,
+        84
+      ],
+      "note": "Two opencode runs, 33:07 and 32:28. Every lost point is in t3-neubau and none repeats: run 1 let a raw KeyError escape for an unknown column, run 2 rejected '!=' and string comparisons in WHERE. t5-wiki under opencode: 62 and 60 of 67, again with no failing test in common."
     }
   }
 }

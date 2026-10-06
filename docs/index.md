@@ -53,6 +53,7 @@ tests pass.**
 | **Ornith-1.5-35B-A3B** (NVFP4) | MoE | 23 GB | **86 / 86** § | 1:09:00 | — | — |
 | **Qwen3.8-Flash-Next** (Q3_K_XL) | MoE | 84 GB | **86 / 86** ¶ | **33:33** | — | 98 |
 | GLM-5.3-Flash (IQ1_S) | MoE | 87 GB | 9 / 86 ‖ | 35:28 | 16 | — |
+| Kolibri-1 (FP8) | MoE | 79 GB | 85 / 86 ◊ | 33:07 | — | 70 |
 
 § Added later, not part of the original round. Two opencode runs: 69/86 and
 86/86. The 69 was `t2-refactor` scoring zero because the rewrite dropped one
@@ -76,6 +77,13 @@ against `t1-debug` before any model touches it and it passes 9 of 15; the other
 three seeds score zero. GLM-5.3-Flash's contribution across all four tasks is
 therefore **nothing at all**, and the row is not a verdict on the model but a
 record of a configuration that did not work. See the GLM section below.
+
+◊ Added later: Aleph Alpha's German/English model, released 3 October 2026
+under Apache 2.0. Two opencode runs, 85/86 and 84/86; every lost point is in
+`t3-neubau` and no failing test repeats between the runs. Tool calls were
+counted from opencode's session database rather than from transcript markers,
+so they are in `results/measurements.json` but not in this column. See [Kolibri-1](#kolibri-1-a-german-open-weight-model)
+below.
 
 † **Not a typo, and the most important number in this table.** Nemotron has
 since been run **thirteen** times on the identical tasks, scoring anywhere from
@@ -150,7 +158,8 @@ support.
 - ASUS Ascent GX10 — NVIDIA GB10, 128 GB unified LPDDR5X (121 GiB usable),
   arm64, Ubuntu 24.04.4
 - ~273 GB/s memory bandwidth (vendor spec, not measured here)
-- vLLM 0.26.0 in Docker for six models, 0.27.1 for the DSpark measurement;
+- vLLM 0.26.0 in Docker for six models, 0.27.1 for the DSpark measurement,
+  0.29.0 with the `aleph-alpha-inference` plugin for Kolibri-1;
   `ds4-server` (llama.cpp-derived,
   from [DeepSeek-v4-Flash-One-DGX-Spark](https://github.com/MiaAI-Lab/DeepSeek-v4-Flash-One-DGX-Spark))
   for DeepSeek
@@ -319,6 +328,56 @@ survive contact with an agent loop. IQ1_S is an aggressive quantisation and
 the obvious suspect, but nothing here tests that — a run at a larger
 quantisation would, and has not been done. Until then, 9/86 means "did not
 work here", and that is all it means.
+
+## Kolibri-1: a German open-weight model
+
+Aleph Alpha released Kolibri-1 on 3 October 2026 under Apache 2.0: a
+German/English mixture-of-experts model, 78.1B parameters of which 3.46B are
+active per token, 384 experts per layer plus one shared, and four
+sliding-window attention layers for every global one. It ships as FP8 and needs
+a vendor plugin for vLLM.
+
+| | Run 1 | Run 2 |
+|---|---|---|
+| Hidden tests, t1–t4 | 85 / 86 | 84 / 86 |
+| Wall clock, t1–t4 | 33:07 | 32:28 |
+| Points lost | `t3-neubau`: a raw `KeyError` for an unknown column | `t3-neubau`: `!=` and string comparisons in `WO` rejected |
+| Tool calls, t1–t4 | 110, none malformed | 147, none malformed |
+| t5-wiki (opencode) | 62 / 67 in 23:06 | 60 / 67 in 21:54 |
+| t5-wiki (Java harness, 80 turns) | 30 / 67 — turn limit, `cli.py` never written | |
+
+**Close to Qwen3.8-Flash-Next and not quite there.** Same size class on disk
+(79 GB against 84), the same wall clock, one or two points short on t1–t4. The
+points it loses do not repeat: no failing test appears in both runs, neither on
+t1–t4 nor on t5. That reads as carelessness at the edges of a spec rather than
+a gap in what the model can do, and two runs are too few to say more.
+
+**It thinks a lot by default.** With nothing in the request, the chat template
+selects reasoning effort `high`, and that is how it was measured, because that
+is what a client gets that sends nothing. In run 1, 63 % of all generated tokens
+across t1–t4 were reasoning (52,829 against 30,523 visible). The reasoning
+parser separated them cleanly; nothing leaked into the answers.
+
+**Slower than its active parameter count suggests.** 48.9 tok/s generating,
+46.4 end-to-end at 16.8k input — the sliding-window layers make prefill nearly
+free. But the ~3B-active models at NVFP4 here run at 78. vLLM picked its Triton
+kernel for the FP8 experts; whether the kernel or the format accounts for the
+gap was not tested.
+
+**Running it.** The plugin (`aleph-alpha-inference` 1.0.0) is pure Python and
+pins vLLM 0.29.x, so it went into the existing `vllm/vllm-openai:v0.29.0-aarch64`
+image with `pip install --no-deps` instead of the vendor's container. Flags:
+`--kv-cache-dtype fp8 --reasoning-parser kolibri1 --tool-call-parser kolibri1
+--enable-auto-tool-choice --max-model-len 131072 --gpu-memory-utilization 0.85`.
+Loading takes about nine minutes; 2.8 million tokens of KV cache remain at
+131,072 context. At 79 GB of weights, nothing else fits beside it.
+
+The vendor's own multi-turn function-calling score (BFCL v3) is 39.8, the
+number that looked most worrying before the run. Across 257 tool calls in two
+runs, not one was malformed.
+
+Under the Java harness, t5-wiki ran into the 80-turn limit at 30/67 with the
+markup module still being reworked; see [t5-wiki](benchmark.md#t5-wiki-a-task-that-separates).
 
 ### Also here
 

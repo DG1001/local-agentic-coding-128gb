@@ -112,6 +112,14 @@
       "generation_tok_s": 18.8,
       "end_to_end_tok_s": 17.7,
       "end_to_end_input_tokens": 16847
+    },
+    "kolibri": {
+      "name": "Kolibri-1 (FP8)",
+      "engine": "vLLM 0.29.0 + aleph-alpha-inference",
+      "speculative_decoding": false,
+      "generation_tok_s": 48.9,
+      "end_to_end_tok_s": 46.4,
+      "end_to_end_input_tokens": 16844
     }
   }
 }

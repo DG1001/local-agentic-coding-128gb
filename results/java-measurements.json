@@ -623,6 +623,19 @@
         "output_tokens": 29904,
         "own_tests": "none written",
         "note": "Wrote only __init__.py, fehler.py and auszeichnung.py; speicher.py never existed, so the hidden suite fails at import. Verified by hand: ModuleNotFoundError, not a harness artefact."
+      },
+      {
+        "model": "Kolibri-1 (FP8)",
+        "hidden_passed": 30,
+        "hidden_total": 67,
+        "seconds": 2103,
+        "exit_code": 1,
+        "exit_reason": "80-turn ceiling, work unfinished: 14 of 24 writes and edits went to wiki/auszeichnung.py, wiki/cli.py was never written",
+        "tool_calls": 98,
+        "input_tokens": 1821708,
+        "output_tokens": 93788,
+        "own_tests": "9 failed, 24 passed",
+        "note": "Run with ZUEGE_T5=80 to match the three rows above; run-java.sh now defaults t5 to 120. Under opencode, which has no turn ceiling, the same model scored 62/67 and 60/67 (measurements.json, kolibri.t5_wiki_opencode). Reasoning effort was the vendor default (high)."
       }
     ]
   }

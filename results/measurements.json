@@ -695,5 +695,132 @@
     "total_pytest_runs": null,
     "total_tool_calls": 16,
     "total_own_tests": null
+  },
+  "kolibri": {
+    "name": "Kolibri-1 (FP8)",
+    "architecture": "MoE, 78.1B total / 3.46B active (384 experts + 1 shared, 6 routed), 4:1 sliding-window:global attention",
+    "precision": "FP8 e4m3, 128x128 blocks, as published by Aleph Alpha",
+    "weights_gb_on_disk": 79,
+    "engine": "vLLM 0.29.0 (vllm/vllm-openai:v0.29.0-aarch64) + aleph-alpha-inference 1.0.0 plugin, --kv-cache-dtype fp8 --reasoning-parser kolibri1 --tool-call-parser kolibri1 --max-model-len 131072 --gpu-memory-utilization 0.85",
+    "note": "Released 3 October 2026 by Aleph Alpha, Apache 2.0, German/English. Measured with the vendor's default reasoning effort (high), because that is what a client gets that sends nothing. Two opencode runs: 85/86 (33:07) and 84/86 (32:28); all three lost points are in t3-neubau and none repeats. t5-wiki under opencode: 62/67 and 60/67. The vendor plugin requires vLLM 0.29.x and is pure Python, so it was installed with --no-deps into the existing aarch64 image rather than using the vendor container.",
+    "tool_call_counts": "counted from opencode's session database (parts of type 'tool'), not from transcript markers, so not comparable with the counts of the original round. No malformed call in either run; the failed calls are edits whose oldString did not match or changed nothing, and reads of files that did not exist.",
+    "runs": 2,
+    "tasks": {
+      "t1-debug": {
+        "seconds": 284,
+        "exit_code": 0,
+        "hidden_passed": 15,
+        "hidden_total": 15,
+        "own_suite": 9,
+        "tool_calls": 20,
+        "output_tokens": 2922,
+        "reasoning_tokens": 8964
+      },
+      "t2-refactor": {
+        "seconds": 380,
+        "exit_code": 0,
+        "hidden_passed": 17,
+        "hidden_total": 17,
+        "own_suite": 13,
+        "tool_calls": 20,
+        "output_tokens": 3175,
+        "reasoning_tokens": 12525
+      },
+      "t3-neubau": {
+        "seconds": 814,
+        "exit_code": 0,
+        "hidden_passed": 32,
+        "hidden_total": 33,
+        "own_suite": 30,
+        "tool_calls": 29,
+        "output_tokens": 14256,
+        "reasoning_tokens": 19807
+      },
+      "t4-feature": {
+        "seconds": 509,
+        "exit_code": 0,
+        "hidden_passed": 21,
+        "hidden_total": 21,
+        "own_suite": 18,
+        "tool_calls": 41,
+        "output_tokens": 10170,
+        "reasoning_tokens": 11533
+      }
+    },
+    "second_run_tasks": {
+      "t1-debug": {
+        "seconds": 284,
+        "exit_code": 0,
+        "hidden_passed": 15,
+        "hidden_total": 15,
+        "own_suite": 9,
+        "tool_calls": 20,
+        "output_tokens": 2321,
+        "reasoning_tokens": 9689
+      },
+      "t2-refactor": {
+        "seconds": 271,
+        "exit_code": 0,
+        "hidden_passed": 17,
+        "hidden_total": 17,
+        "own_suite": 13,
+        "tool_calls": 26,
+        "output_tokens": 4595,
+        "reasoning_tokens": 6726
+      },
+      "t3-neubau": {
+        "seconds": 734,
+        "exit_code": 0,
+        "hidden_passed": 31,
+        "hidden_total": 33,
+        "own_suite": 31,
+        "tool_calls": 59,
+        "output_tokens": 20257,
+        "reasoning_tokens": 9456
+      },
+      "t4-feature": {
+        "seconds": 659,
+        "exit_code": 0,
+        "hidden_passed": 21,
+        "hidden_total": 21,
+        "own_suite": 18,
+        "tool_calls": 42,
+        "output_tokens": 12455,
+        "reasoning_tokens": 15399
+      }
+    },
+    "t5_wiki_opencode": [
+      {
+        "run": 1,
+        "seconds": 1386,
+        "exit_code": 0,
+        "hidden_passed": 62,
+        "hidden_total": 67,
+        "own_suite": 38,
+        "tool_calls": 96,
+        "output_tokens": 28648,
+        "reasoning_tokens": 26463,
+        "lost": "all five in wiki/app.py: FassungFehlt used but never imported (2), invalid page name not mapped to 400 (2), 404 page without the offer to create the page (1)"
+      },
+      {
+        "run": 2,
+        "seconds": 1314,
+        "exit_code": 0,
+        "hidden_passed": 60,
+        "hidden_total": 67,
+        "own_suite": 48,
+        "tool_calls": 105,
+        "output_tokens": 31516,
+        "reasoning_tokens": 21102,
+        "lost": "markup (paragraph joining, mixed list block), page-name normalisation (space vs underscore, 2), saving over the web (redirect, anonymous author), percent-encoding in the request body"
+      }
+    ],
+    "total_seconds": 1987,
+    "total_hidden_passed": 85,
+    "total_hidden": 86,
+    "total_read_search_calls": null,
+    "total_pytest_runs": null,
+    "total_tool_calls": 110,
+    "total_own_tests": 70
   }
 }
