@@ -20,7 +20,6 @@
 #   model-switch qwen36nvfp4-voice dito, Dauerbetrieb :8889  (vLLM, 0.55)
 #   model-switch qwenvl       Qwen3-VL-32B        :8889  (vLLM, sieht Bilder)
 #   model-switch qwenvl30     Qwen3-VL-30B-A3B    :8889  (dasselbe als MoE)
-#   model-switch nemo3super   Nemotron-3-Super    :8889  (vLLM, 120B-A12B, MTP)
 #   model-switch nemo3omni    Nemotron-3-Omni     :8889  (vLLM, sieht und hoert)
 #   model-switch nemo35super  Nemotron-3.5-Super-VL :8889 (vLLM-nightly, 120B-A12B, DFlash)
 #   model-switch qwen38flash  Qwen3.8-Flash-Next  :8889  (llama.cpp/PR 28243, MTP)
@@ -89,47 +88,10 @@ load_spec() {
                    --tool-call-parser qwen3_coder
                    --enable-auto-tool-choice) ;;
 
-        nemo3super)
-            # Nemotron-3-Super-120B-A12B in NVFP4, 75 GiB. Das groesste
-            # Textmodell, das hier hineinpasst -- und der erste Bewohner mit
-            # zweistelligen aktiven Parametern: 12B statt der 3B, die alle
-            # anderen MoE-Modelle hier fahren. Rechnerisch also grob ein
-            # Viertel des Tempos. Ob das tragbar ist, entscheidet MTP, nicht
-            # die Rohgeschwindigkeit -- deshalb ist es hier eingeschaltet.
-            #
-            # Die Modellkarte fuehrt 'mtp' und 'latent-moe'; vLLM 0.27.1 kennt
-            # NemotronHMTPModel, der Kopf steckt im Checkpoint selbst, ein
-            # zweites Verzeichnis wie bei DSpark ist nicht noetig.
-            # Zum Gegenmessen: SPEC=0 model-switch nemo3super
-            ABBILD=vllm/vllm-openai:v0.27.1
-            DIR=NVIDIA-Nemotron-3-Super-120B-A12B-NVFP4
-            SERVED=nemotron-3-super; DEF_CTX=131072
-            EXTRA=()
-            [ "${SPEC:-1}" = 1 ] && EXTRA+=(--speculative-config '{"method":"mtp","num_speculative_tokens":2}')
-            # Dieselben Mamba- und MoE-Flaggen wie bei den anderen NemotronH:
-            # --mamba-cache-mode align verlangt eine Stapelgrenze von mindestens
-            # der Blockgroesse des Zustandsspeichers, vLLMs Vorgabe 2048 ist zu
-            # klein und der Start bricht mit einer Zusicherungsverletzung ab.
-            # KEIN --moe-backend marlin, anders als bei Nemotron-3.5:
-            # dieser Checkpoint ist MIXED_PRECISION, seine MoE-Schichten
-            # liegen unquantisiert vor, und vLLM lehnt Marlin dafuer ab
-            # ("not supported for unquantized MoE"). Ohne Angabe waehlt
-            # vLLM selbst -- auf GB10 landet es bei triton.
-            EXTRA+=(--max-num-batched-tokens 8192
-                   --enable-prefix-caching
-                   --mamba-backend flashinfer
-                   --mamba-cache-mode align
-                   --reasoning-parser nemotron_v3
-                   --tool-call-parser qwen3_coder)
-            # 75 GiB Gewichte lassen bei 0.85 rund 28 GiB fuer KV und Aktivierung.
-            # Reicht es bei 131072 nicht, zuerst CTX kleiner setzen, nicht
-            # GPU_UTIL hoeher -- darunter liegt nur noch das Betriebssystem.
-            GPU_UTIL=${GPU_UTIL:-0.88} ;;
-
         nemo35super)
             # Nemotron-3.5-Super-VL-120B-A12B, NVFP4, 75 GB, 12B aktiv, sieht
             # Bilder. Angeschafft am 16.10.2026 fuer einen Pruefstandslauf;
-            # Nemotron-3-Super (nemo3super) wurde dafuer geloescht.
+            # Nemotron-3-Super (frueher Profil nemo3super) wurde dafuer geloescht.
             #
             # Das Abbild ist das, das die Modellkarte nennt (0.32.0rc1); die
             # aelteren Abbilder hier sind damit nicht probiert. Fuer GB10 empfiehlt die Karte DFlash
@@ -148,7 +110,10 @@ load_spec() {
             GPU_UTIL=${GPU_UTIL:-0.75}
             EXTRA=()
             [ "${SPEC:-1}" = 1 ] && EXTRA+=(--speculative-config '{"method":"dflash","model":"/models/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-NVFP4-LiLiCorr","num_speculative_tokens":7}')
-            # Mamba-Flaggen wie bei den anderen NemotronH, siehe nemo3super.
+            # Mamba-Flaggen wie bei den anderen NemotronH: --mamba-cache-mode
+            # align verlangt eine Stapelgrenze von mindestens der Blockgroesse
+            # des Zustandsspeichers, vLLMs Vorgabe 2048 ist zu klein und der
+            # Start bricht mit einer Zusicherungsverletzung ab.
             # --trust-remote-code: Architektur NemotronH_Omni_Reasoning_V3
             # kommt per auto_map aus dem Checkpoint, wie bei nemo3omni.
             EXTRA+=(--trust-remote-code
@@ -803,7 +768,7 @@ case "${1:-status}" in
         # wurde nicht gebraucht.
         LLAMA_EXTRA=(--spec-type draft-mtp --spec-draft-n-max 2)
         start_llama ;;
-    laguna|kat|agentworld|qwen27b|nemotron|nemotronspec|nemo3super|nemo3omni|nemo35super|qwen36moe|qwen38|ornith|ornith-voice|qwen36nvfp4|qwen36nvfp4-voice|qwenvl|qwenvl30)
+    laguna|kat|agentworld|qwen27b|nemotron|nemotronspec|nemo3omni|nemo35super|qwen36moe|qwen38|ornith|ornith-voice|qwen36nvfp4|qwen36nvfp4-voice|qwenvl|qwenvl30)
             start_vllm "$1" ;;
     stop)   stop_ds4; stop_vllm; stop_llama; echo "Alles gestoppt."; free -h | awk 'NR==2{print "Frei: "$7}' ;;
     status) status ;;
