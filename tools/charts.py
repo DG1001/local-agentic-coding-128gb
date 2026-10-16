@@ -277,6 +277,8 @@ def main():
         # einem Diagramm "Punktzahl gegen Durchsatz" waere das eine Luege.
         ("Qwen3.8-Flash-Next · 2 runs", d["qwen38flash"]["end_to_end_tok_s"], [86, 86], BETONT, 9, 4),
         ("Kolibri-1 · 2 runs", d["kolibri"]["end_to_end_tok_s"], [85, 84], BALKEN, 9, -8),
+        # Nemotron-3.5-Super: 69 und 86, der Balken reicht bis in die Mitte.
+        ("Nemotron-3.5-Super · 2 runs", d["nemo35super"]["end_to_end_tok_s"], [69, 86], BALKEN, 9, 60),
     ]
     p = streu(daten, "What a score costs in speed",
               "vertical bars are repeated runs of one configuration, not error bars",

@@ -51,6 +51,7 @@ tests pass.**
 | GLM-5.3-Flash (IQ1_S) | MoE | 87 GB | 9 / 86 ‖ | 35:28 | 16 | — |
 | **Ternary-Bonsai-2-27B** (PQ2_0) | dense | **7.2 GB** | **86 / 86** # | 2:51:23 | 184 | 113 |
 | Kolibri-1 (FP8) | MoE | 79 GB | 85 / 86 ◊ | 33:07 | — | 70 |
+| **Nemotron-3.5-Super-120B-A12B** (NVFP4 + DFlash) | MoE | 75 GB | **86 / 86** ※ | **15:59** | — | 68 |
 
 § Added later, not part of the original round. Two opencode runs: 69/86 and
 86/86. The 69 was `t2-refactor` scoring zero because the rewrite dropped one
@@ -96,6 +97,15 @@ counted from opencode's session database rather than from transcript markers,
 so they are in `results/measurements.json` but not in this column. See [Kolibri-1](#kolibri-1-a-german-open-weight-model)
 below.
 
+※ Added later: NVIDIA's 120B hybrid Mamba/attention mixture-of-experts model
+with 12B active, released 12 October 2026. Two opencode runs, 69/86 and 86/86 —
+the same pair Ornith produced, and again the zero is `t2-refactor`: the model
+announced a fix for a circular import it had just introduced, then ended its
+turn without making it. **15:59 is the fastest perfect run in this collection**,
+at 20.6 end-to-end tokens per second, about a third of the previous holder's.
+Tool calls were counted from opencode's session database, as for Kolibri-1. See
+[Nemotron-3.5-Super](#nemotron-35-super-the-fastest-perfect-run-at-a-third-of-the-speed) below.
+
 † **Not a typo, and the most important number in this table.** Nemotron has
 since been run **thirteen** times on the identical tasks, scoring anywhere from
 47 to 85 — a 38-point spread, **wider than the whole field above**, every other
@@ -137,9 +147,13 @@ Everything above is in this one picture: score up, throughput right, and a
 vertical bar wherever the same configuration was run more than once.
 
 **Qwen3.6-35B-A3B at NVFP4 holds both ends: 86/86 in 21:01, at 57.9 end-to-end
-tokens per second.** That is the fastest perfect run here — DeepSeek needs
-25:49 at 16.5 tok/s, Laguna 30:56 at 19.5 — and it is three times further right
-than either.
+tokens per second.** DeepSeek needs
+25:49 at 16.5 tok/s, Laguna 30:56 at 19.5, and it is three times further right
+than either. Nemotron-3.5-Super, added later, finished a perfect run sooner
+still, in 15:59 at 20.6 tok/s, so it sits on the left of this chart with the
+slow models. **Throughput and wall clock are different axes:** a model that
+needs fewer tokens to finish can be slow per token and still be first. See
+[Nemotron-3.5-Super](#nemotron-35-super-the-fastest-perfect-run-at-a-third-of-the-speed).
 
 > **This replaces an earlier reading of the same chart.** Before that run, the
 > four configurations at 86/86 all sat at 19.5 tok/s or below, and this section
@@ -170,7 +184,8 @@ support.
   arm64, Ubuntu 24.04.4
 - ~273 GB/s memory bandwidth (vendor spec, not measured here)
 - vLLM 0.26.0 in Docker for six models, 0.27.1 for the DSpark measurement,
-  0.29.0 with the `aleph-alpha-inference` plugin for Kolibri-1;
+  0.29.0 with the `aleph-alpha-inference` plugin for Kolibri-1, a 0.32 nightly
+  for Nemotron-3.5-Super;
   `ds4-server` (llama.cpp-derived,
   from [DeepSeek-v4-Flash-One-DGX-Spark](https://github.com/MiaAI-Lab/DeepSeek-v4-Flash-One-DGX-Spark))
   for DeepSeek
@@ -284,8 +299,8 @@ produced 64 and 67 before its 86; Nemotron has scored anywhere from 47 to 85
 across thirteen runs. **The variation here is wall clock only** — and almost
 all of it sits in one task, `t3-neubau`, at 779 s against 1319 s.
 
-It is not the fastest perfect run: Qwen3.6-35B-A3B at NVFP4 still holds that
-at 21:01 and 57.9 end-to-end tokens per second. But at 29.0 tok/s it beats
+It is not the fastest perfect run: Qwen3.6-35B-A3B at NVFP4 did 21:01 at 57.9
+end-to-end tokens per second, and Nemotron-3.5-Super, added later, 15:59. But at 29.0 tok/s it beats
 Laguna's 30:56 while scoring the same, and it does it as a 6B-active model
 read from a 3-bit GGUF.
 
@@ -389,6 +404,75 @@ runs, not one was malformed.
 
 Under the Java harness, t5-wiki ran into the 80-turn limit at 30/67 with the
 markup module still being reworked; see [t5-wiki](docs/benchmark.md#t5-wiki-a-task-that-separates).
+
+## Nemotron-3.5-Super: the fastest perfect run, at a third of the speed
+
+NVIDIA released Nemotron-3.5-Super-VL-120B-A12B on 12 October 2026 under the
+OpenMDW-1.1 licence. It is a hybrid of Mamba-2 and attention layers with
+mixture-of-experts feed-forward blocks: 120B parameters, 12B of them active
+per token, plus a vision encoder that was not tested here. The NVFP4 checkpoint
+is 75 GB. NVIDIA also ships a 1.3 GB draft model for speculative decoding
+(DFlash) and recommends it specifically for DGX Spark.
+
+| | Run 1 | Run 2 |
+|---|---|---|
+| Hidden tests, t1–t4 | 69 / 86 | **86 / 86** |
+| Wall clock, t1–t4 | 12:45 | **15:59** |
+| Points lost | `t2-refactor`: turn ended mid-fix, package left with a circular import | none |
+| Tool calls, t1–t4 | 84, none failed | 105, two failed edits, none malformed |
+| Output tokens, t1–t4 | 24,318 | 26,806 |
+| t5-wiki (opencode) | **67 / 67** in 8:51 | **67 / 67** in 10:39 |
+
+**The zero is a stop, not a wrong answer.** In run 1 the model's rewrite for
+`t2-refactor` introduced a circular import. Its own reply diagnosed the problem
+correctly and ended with "Let me rewrite both files properly". Then the turn
+ended. The package no longer imported, so the hidden suite failed at
+collection, and the task scored 0 rather than losing a few tests. A separate
+repeat of just that task on the same server scored 17/17 in 2:48.
+`t2-refactor` has now zeroed four different models in this collection.
+
+**Fastest perfect run, at a third of the speed.** Run 2 finished t1–t4 in
+15:59, against 21:01 for Qwen3.6-35B-A3B at NVFP4. That model generates at
+78.3 tok/s; this one at 25.4. The difference is how much it writes: 26,806
+output tokens and 105 tool calls across the four tasks. On t5-wiki it scored
+67/67 twice in about ten minutes, with 17,050 and 22,071 output tokens.
+Kolibri-1 scored 62/67 there in 23:06 with 28,648 visible tokens plus 26,463
+of reasoning.
+
+That comparison is partly one of settings. Reasoning was off here, as for every
+vLLM model in the original round (`--default-chat-template-kwargs
+'{"enable_thinking": false}'`). Kolibri-1 was measured with its vendor default,
+reasoning on. What the comparison does show is that this model finishes the
+work without reasoning tokens and without losing points for it.
+
+**Speculative decoding pays off more in agent work than in the throughput
+test.**
+
+| | Generation | End-to-end (16.8k in) |
+|---|---|---|
+| Without speculation | 18.2 tok/s | 18.1 tok/s |
+| DFlash, 7 draft tokens | 25.4 tok/s | 20.6 tok/s |
+
+On the prose prompt of the throughput test, the draft model's guesses were
+accepted for 2.4 to 2.6 tokens on average out of 7. During the benchmark runs
+the median was 5.7 and 6.1. Code edits repeat text the model has just read,
+and a small draft model guesses that well. vLLM reported stretches of up to
+71 tok/s. The table above therefore understates the speed in this kind of work.
+
+**Running it.** The model card names a vLLM nightly build
+(`nightly-3f1bcfd82bb2e93fcd364fc7a5491718453a77e2`, 0.32.0rc1), and that is
+what ran. Flags: `--trust-remote-code --speculative-config
+'{"method":"dflash","model":"<draft>","num_speculative_tokens":7}'
+--mamba-backend flashinfer --mamba-cache-mode align --max-num-batched-tokens
+8192 --enable-prefix-caching --reasoning-parser nemotron_v3 --tool-call-parser
+qwen3_coder --kv-cache-dtype fp8 --max-model-len 131072`.
+
+Loading takes about fifteen minutes: 88 weight shards, then CUDA graph capture
+for both models and FlashInfer autotuning. Any watchdog that restarts a server
+which does not answer within a few minutes will kill it mid-load. At
+`--gpu-memory-utilization 0.85` (run 1), about 1 GB of system memory stayed
+free and 8 GB sat in swap. At 0.75 (run 2), 389,000 tokens of KV cache remain
+with the draft model loaded, enough for nearly three full 131,072-token contexts.
 
 ### Also here
 

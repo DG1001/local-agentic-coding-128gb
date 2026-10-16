@@ -822,5 +822,142 @@
     "total_pytest_runs": null,
     "total_tool_calls": 110,
     "total_own_tests": 70
+  },
+  "nemo35super": {
+    "name": "Nemotron-3.5-Super-120B-A12B (NVFP4 + DFlash)",
+    "architecture": "hybrid Mamba-2/attention with MoE feed-forward, 120B total / 12B active, C-RADIO vision encoder (vision not tested here)",
+    "precision": "NVFP4 (mixed precision, as published by NVIDIA)",
+    "weights_gb_on_disk": 75,
+    "engine": "vLLM 0.32.0rc1 nightly (vllm/vllm-openai:nightly-3f1bcfd82bb2e93fcd364fc7a5491718453a77e2, the build named in the model card), --trust-remote-code, DFlash with the 1.3 GB LiLiCorr draft model and 7 draft tokens, --mamba-backend flashinfer --mamba-cache-mode align --max-num-batched-tokens 8192 --enable-prefix-caching --reasoning-parser nemotron_v3 --tool-call-parser qwen3_coder --kv-cache-dtype fp8 --max-model-len 131072; --gpu-memory-utilization 0.85 for run 1, 0.75 for run 2",
+    "note": "Released 12 October 2026 by NVIDIA, OpenMDW-1.1. Reasoning off, as for every vLLM model in the original round (--default-chat-template-kwargs enable_thinking=false). Two opencode runs: 69/86 (12:45) and 86/86 (15:59); 'tasks' is the 86 run, 'first_run_tasks' the 69. Run 1 lost all of t2-refactor; a separate repeat of only that task on the same server scored 17/17 in 168 s. t5-wiki under opencode: 67/67 in both runs (531 s and 639 s). A first attempt at run 2 was discarded: opencode stalled after start-up and never sent a request, the server stayed idle until the 90-minute cap; an identical restart ran normally.",
+    "tool_call_counts": "counted from opencode's session database (parts of type 'tool'), as for Kolibri-1. No malformed call in either run; the two failed calls in run 2 are an edit with identical old and new string and an edit whose oldString did not match.",
+    "runs": 2,
+    "tasks": {
+      "t1-debug": {
+        "seconds": 86,
+        "exit_code": 0,
+        "hidden_passed": 15,
+        "hidden_total": 15,
+        "own_suite": 11,
+        "tool_calls": 17,
+        "output_tokens": 2948,
+        "reasoning_tokens": 0
+      },
+      "t2-refactor": {
+        "seconds": 228,
+        "exit_code": 0,
+        "hidden_passed": 17,
+        "hidden_total": 17,
+        "own_suite": 14,
+        "tool_calls": 30,
+        "output_tokens": 5619,
+        "reasoning_tokens": 0
+      },
+      "t3-neubau": {
+        "seconds": 437,
+        "exit_code": 0,
+        "hidden_passed": 33,
+        "hidden_total": 33,
+        "own_suite": 29,
+        "tool_calls": 36,
+        "output_tokens": 12029,
+        "reasoning_tokens": 0
+      },
+      "t4-feature": {
+        "seconds": 208,
+        "exit_code": 0,
+        "hidden_passed": 21,
+        "hidden_total": 21,
+        "own_suite": 14,
+        "tool_calls": 22,
+        "output_tokens": 6210,
+        "reasoning_tokens": 0
+      }
+    },
+    "first_run_tasks": {
+      "t1-debug": {
+        "seconds": 145,
+        "exit_code": 0,
+        "hidden_passed": 15,
+        "hidden_total": 15,
+        "own_suite": 10,
+        "tool_calls": 15,
+        "output_tokens": 3175,
+        "reasoning_tokens": 0
+      },
+      "t2-refactor": {
+        "seconds": 71,
+        "exit_code": 0,
+        "hidden_passed": 0,
+        "hidden_total": 17,
+        "own_suite": null,
+        "tool_calls": 9,
+        "output_tokens": 2016,
+        "reasoning_tokens": 0,
+        "note": "turn ended after the model announced a rewrite to fix a circular import it had introduced; the package no longer imported, so the hidden suite failed at collection"
+      },
+      "t3-neubau": {
+        "seconds": 259,
+        "exit_code": 0,
+        "hidden_passed": 33,
+        "hidden_total": 33,
+        "own_suite": 30,
+        "tool_calls": 22,
+        "output_tokens": 8864,
+        "reasoning_tokens": 0
+      },
+      "t4-feature": {
+        "seconds": 290,
+        "exit_code": 0,
+        "hidden_passed": 21,
+        "hidden_total": 21,
+        "own_suite": 17,
+        "tool_calls": 38,
+        "output_tokens": 10263,
+        "reasoning_tokens": 0
+      }
+    },
+    "t5_wiki_opencode": [
+      {
+        "run": 1,
+        "seconds": 531,
+        "exit_code": 0,
+        "hidden_passed": 67,
+        "hidden_total": 67,
+        "own_suite": 60,
+        "tool_calls": 30,
+        "output_tokens": 17050,
+        "reasoning_tokens": 0
+      },
+      {
+        "run": 2,
+        "seconds": 639,
+        "exit_code": 0,
+        "hidden_passed": 67,
+        "hidden_total": 67,
+        "own_suite": 45,
+        "tool_calls": 42,
+        "output_tokens": 22071,
+        "reasoning_tokens": 0
+      }
+    ],
+    "t2_repeat": {
+      "seconds": 168,
+      "exit_code": 0,
+      "hidden_passed": 17,
+      "hidden_total": 17,
+      "own_suite": 14,
+      "tool_calls": 21,
+      "output_tokens": 3897,
+      "reasoning_tokens": 0
+    },
+    "speculative_acceptance": "median acceptance length per vLLM metrics interval: 5.7 (run 1) and 6.1 (run 2) of 7 draft tokens, against 2.4-2.6 on the prose prompt of throughput.py",
+    "total_seconds": 959,
+    "total_hidden_passed": 86,
+    "total_hidden": 86,
+    "total_read_search_calls": null,
+    "total_pytest_runs": null,
+    "total_tool_calls": 105,
+    "total_own_tests": 68
   }
 }

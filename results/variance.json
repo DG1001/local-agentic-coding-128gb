@@ -133,6 +133,14 @@
         84
       ],
       "note": "Two opencode runs, 33:07 and 32:28. Every lost point is in t3-neubau and none repeats: run 1 let a raw KeyError escape for an unknown column, run 2 rejected '!=' and string comparisons in WHERE. t5-wiki under opencode: 62 and 60 of 67, again with no failing test in common."
+    },
+    "Nemotron-3.5-Super-120B-A12B (NVFP4)": {
+      "runs": 2,
+      "scores": [
+        69,
+        86
+      ],
+      "note": "Two opencode runs, 12:45 and 15:59. Run 1 scored zero on t2-refactor: the model introduced a circular import, announced the fix and ended its turn without making it. A repeat of only t2 scored 17/17. t5-wiki: 67/67 both times."
     }
   }
 }

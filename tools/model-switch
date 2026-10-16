@@ -22,6 +22,7 @@
 #   model-switch qwenvl30     Qwen3-VL-30B-A3B    :8889  (dasselbe als MoE)
 #   model-switch nemo3super   Nemotron-3-Super    :8889  (vLLM, 120B-A12B, MTP)
 #   model-switch nemo3omni    Nemotron-3-Omni     :8889  (vLLM, sieht und hoert)
+#   model-switch nemo35super  Nemotron-3.5-Super-VL :8889 (vLLM-nightly, 120B-A12B, DFlash)
 #   model-switch qwen38flash  Qwen3.8-Flash-Next  :8889  (llama.cpp/PR 28243, MTP)
 #   model-switch glm53flash   GLM-5.3-Flash       :8889  (Gewichte seit 03.10. geloescht)
 #   model-switch stop         alles stoppen
@@ -124,6 +125,40 @@ load_spec() {
             # Reicht es bei 131072 nicht, zuerst CTX kleiner setzen, nicht
             # GPU_UTIL hoeher -- darunter liegt nur noch das Betriebssystem.
             GPU_UTIL=${GPU_UTIL:-0.88} ;;
+
+        nemo35super)
+            # Nemotron-3.5-Super-VL-120B-A12B, NVFP4, 75 GB, 12B aktiv, sieht
+            # Bilder. Angeschafft am 16.10.2026 fuer einen Pruefstandslauf;
+            # Nemotron-3-Super (nemo3super) wurde dafuer geloescht.
+            #
+            # Das Abbild ist das, das die Modellkarte nennt (0.32.0rc1); die
+            # aelteren Abbilder hier sind damit nicht probiert. Fuer GB10 empfiehlt die Karte DFlash
+            # mit eigenem kleinem Entwurfsmodell (LiLiCorr, 1,3 GB) und 7
+            # Entwurfstoken, auf anderer Hardware MTP.
+            # Zum Gegenmessen: SPEC=0 model-switch nemo35super
+            ABBILD=vllm/vllm-openai:nightly-3f1bcfd82bb2e93fcd364fc7a5491718453a77e2
+            DIR=NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-NVFP4
+            SERVED=nemotron-3.5-super; DEF_CTX=131072
+            # 88 Teile zu je etwa 4 s, danach Entwurf und CUDA-Graphen: die
+            # 360 s Vorgabe liefen am 16.10.2026 mitten im Laden ab.
+            WARTEN=${WARTEN:-900}
+            # 0.75 statt 0.85: bei 0.85 blieb 1 GB frei und 8 GB lagen im Swap.
+            # Mit DFlash bleiben bei 0.75 noch 388.722 KV-Token, knapp drei
+            # volle Kontexte (gemessen 17.10.2026, Pruefstandslauf 2).
+            GPU_UTIL=${GPU_UTIL:-0.75}
+            EXTRA=()
+            [ "${SPEC:-1}" = 1 ] && EXTRA+=(--speculative-config '{"method":"dflash","model":"/models/NVIDIA-Nemotron-3.5-Super-VL-120B-A12B-NVFP4-LiLiCorr","num_speculative_tokens":7}')
+            # Mamba-Flaggen wie bei den anderen NemotronH, siehe nemo3super.
+            # --trust-remote-code: Architektur NemotronH_Omni_Reasoning_V3
+            # kommt per auto_map aus dem Checkpoint, wie bei nemo3omni.
+            EXTRA+=(--trust-remote-code
+                   --limit-mm-per-prompt '{"image":2,"video":0}'
+                   --max-num-batched-tokens 8192
+                   --enable-prefix-caching
+                   --mamba-backend flashinfer
+                   --mamba-cache-mode align
+                   --reasoning-parser nemotron_v3
+                   --tool-call-parser qwen3_coder) ;;
 
         nemo3omni)
             # Nemotron-3-Nano-Omni-30B-A3B, 21 GiB, 3B aktiv -- also in der
@@ -651,7 +686,7 @@ start_vllm() {
         --gpu-memory-utilization "${GPU_UTIL:-0.85}" \
         --kv-cache-dtype "${KV_DTYPE:-fp8}" \
         --host 0.0.0.0 --port 8000 >/dev/null
-    wait_ready "$VLLM_PORT" "$SERVED" 360
+    wait_ready "$VLLM_PORT" "$SERVED" "${WARTEN:-360}"
     belegung_melden "$1" "$SERVED"
 }
 
@@ -768,7 +803,7 @@ case "${1:-status}" in
         # wurde nicht gebraucht.
         LLAMA_EXTRA=(--spec-type draft-mtp --spec-draft-n-max 2)
         start_llama ;;
-    laguna|kat|agentworld|qwen27b|nemotron|nemotronspec|nemo3super|nemo3omni|qwen36moe|qwen38|ornith|ornith-voice|qwen36nvfp4|qwen36nvfp4-voice|qwenvl|qwenvl30)
+    laguna|kat|agentworld|qwen27b|nemotron|nemotronspec|nemo3super|nemo3omni|nemo35super|qwen36moe|qwen38|ornith|ornith-voice|qwen36nvfp4|qwen36nvfp4-voice|qwenvl|qwenvl30)
             start_vllm "$1" ;;
     stop)   stop_ds4; stop_vllm; stop_llama; echo "Alles gestoppt."; free -h | awk 'NR==2{print "Frei: "$7}' ;;
     status) status ;;

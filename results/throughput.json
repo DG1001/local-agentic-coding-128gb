@@ -120,6 +120,19 @@
       "generation_tok_s": 48.9,
       "end_to_end_tok_s": 46.4,
       "end_to_end_input_tokens": 16844
+    },
+    "nemo35super": {
+      "name": "Nemotron-3.5-Super-120B-A12B (NVFP4)",
+      "engine": "vLLM 0.32.0rc1 nightly + DFlash",
+      "speculative_decoding": true,
+      "generation_tok_s": 25.4,
+      "end_to_end_tok_s": 20.6,
+      "end_to_end_input_tokens": 16844,
+      "without_speculation": {
+        "generation_tok_s": 18.2,
+        "end_to_end_tok_s": 18.1,
+        "note": "same server with SPEC=0, measured the same day"
+      }
     }
   }
 }
