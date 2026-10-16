@@ -24,9 +24,15 @@
 #   model-switch nemo3omni    Nemotron-3-Omni     :8889  (vLLM, sieht und hoert)
 #   model-switch nemo35super  Nemotron-3.5-Super-VL :8889 (vLLM-nightly, 120B-A12B, DFlash)
 #   model-switch qwen38flash  Qwen3.8-Flash-Next  :8889  (llama.cpp/PR 28243, MTP)
-#   model-switch glm53flash   GLM-5.3-Flash       :8889  (Gewichte seit 03.10. geloescht)
+#   model-switch glm53flash   GLM-5.3-Flash       :8889  (llama.cpp)
 #   model-switch stop         alles stoppen
 #   model-switch status       was laeuft gerade
+#
+# Auf dem GX10 selbst sind die Gewichte dieser Profile inzwischen geloescht:
+# laguna, kat, agentworld, qwen27b, qwen36moe, qwenvl, nemo3super, glm53flash.
+# Die Profile bleiben trotzdem stehen -- sie sind das Rezept, mit dem die
+# veroeffentlichten Messungen entstanden sind. Fehlen die Gewichte, bricht
+# der Start ab, bevor irgendetwas gestoppt wird.
 #
 # Uebersteuerbar je Aufruf:  CTX=131072 model-switch kat
 #                            GPU_UTIL=0.80 model-switch qwen27b
@@ -536,7 +542,7 @@ stop_llama() {
 # gelernt hat, ohne Umkonfiguration.
 start_llama() {
     local gguf="$LLAMA_GGUF"
-    [ -f "$gguf" ] || { echo "FEHLER: $gguf fehlt"; exit 1; }
+    [ -f "$gguf" ] || { echo "FEHLER: $gguf fehlt -- Gewichte nicht auf dieser Maschine, nichts gestoppt."; exit 1; }
     pruefe_verdraengung
     stop_ds4; stop_vllm; stop_llama
     echo "Starte llama-server ($LLAMA_NAME, ctx ${CTX:-65536}, ${PARALLEL:-1} Slot) ..."
@@ -640,7 +646,7 @@ pruefe_verdraengung() {
 start_vllm() {
     local key="$1"
     load_spec "$key" || { echo "Unbekanntes Modell: $key"; exit 2; }
-    [ -d "$MODELS/$DIR" ] || { echo "FEHLER: $MODELS/$DIR fehlt"; exit 1; }
+    [ -d "$MODELS/$DIR" ] || { echo "FEHLER: $MODELS/$DIR fehlt -- Gewichte nicht auf dieser Maschine, nichts gestoppt."; exit 1; }
 
     # stop_llama gehoert hierher, auch wenn es lange fehlte: llama-server
     # hoert auf demselben Port 8889. Blieb er stehen, scheiterte docker run
