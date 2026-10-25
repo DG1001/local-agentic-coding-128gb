@@ -29,7 +29,7 @@
 #   model-switch status       was laeuft gerade
 #
 # Auf dem GX10 selbst sind die Gewichte dieser Profile inzwischen geloescht:
-# laguna, kat, agentworld, qwen27b, qwen36moe, qwenvl, nemo3super, glm53flash.
+# laguna, kat, agentworld, qwen27b, qwen36moe, qwenvl, qwenvl30, nemo3super, glm53flash.
 # Die Profile bleiben trotzdem stehen -- sie sind das Rezept, mit dem die
 # veroeffentlichten Messungen entstanden sind. Fehlen die Gewichte, bricht
 # der Start ab, bevor irgendetwas gestoppt wird.
